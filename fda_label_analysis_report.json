@@ -1,0 +1,738 @@
+{
+  "total_fields": 26,
+  "field_analysis": {
+    "drugName": {
+      "occurrences": 8,
+      "max_length": 18,
+      "samples": [
+        "Emgality",
+        "Olumiant",
+        "Mounjaro"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "setId": {
+      "occurrences": 8,
+      "max_length": 36,
+      "samples": [
+        "33a147be-233a-40e8-a55e-e40936e28db0",
+        "866e9f35-9035-4581-a4b1-75a621ab55cf",
+        "d2d7da5d-ad07-4228-955f-cf7e355c8cc0"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "slug": {
+      "occurrences": 8,
+      "max_length": 17,
+      "samples": [
+        "emgality-33a147b",
+        "olumiant-866e9f3",
+        "mounjaro-d2d7da5"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "labeler": {
+      "occurrences": 8,
+      "max_length": 21,
+      "samples": [
+        "Eli Lilly and Company",
+        "Eli Lilly and Company",
+        "Eli Lilly and Company"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "label.genericName": {
+      "occurrences": 8,
+      "max_length": 17,
+      "samples": [
+        "galcanezumab-gnlm",
+        "baricitinib",
+        "tirzepatide"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "label.labelerName": {
+      "occurrences": 8,
+      "max_length": 21,
+      "samples": [
+        "Eli Lilly and Company",
+        "Eli Lilly and Company",
+        "Eli Lilly and Company"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "label.productType": {
+      "occurrences": 8,
+      "max_length": 29,
+      "samples": [
+        "HUMAN PRESCRIPTION DRUG LABEL",
+        "HUMAN PRESCRIPTION DRUG LABEL",
+        "HUMAN PRESCRIPTION DRUG LABEL"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "label.effectiveTime": {
+      "occurrences": 8,
+      "max_length": 8,
+      "samples": [
+        "20210311",
+        "20241113",
+        "20250114"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "label.title": {
+      "occurrences": 8,
+      "max_length": 9,
+      "samples": [
+        "EMGALITY",
+        "Olumiant",
+        "MOUNJARO"
+      ],
+      "is_html": false,
+      "html_tags": [],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": []
+    },
+    "label.indicationsAndUsage": {
+      "occurrences": 8,
+      "max_length": 1819,
+      "samples": [
+        "[HTML] 1 INDICATIONS AND USAGE1.1 MigraineEMGALITY is indicated for the preventive treatment of migraine in adults.1.2 Episodic Cluster HeadacheEMGALITY is indicated for the treatment of episodic cluster hea..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "section",
+        "h2",
+        "span",
+        "p",
+        "li",
+        "ul",
+        "h1",
+        "div"
+      ],
+      "has_tables": false,
+      "has_lists": true,
+      "section_codes": [
+        "42229-5",
+        "34067-9"
+      ]
+    },
+    "label.dosageAndAdministration": {
+      "occurrences": 8,
+      "max_length": 28011,
+      "samples": [
+        "[HTML] 2 DOSAGE AND ADMINISTRATION2.1 Recommended Dosing for MigraineThe recommended dosage of EMGALITY is 240\u00a0mg (two consecutive subcutaneous injections of 120\u00a0mg each) once as a loading dose, followed by ..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "caption",
+        "br",
+        "li",
+        "dl",
+        "ul",
+        "dt",
+        "h1",
+        "td",
+        "ol",
+        "tfoot",
+        "col",
+        "dd",
+        "h2",
+        "a",
+        "section",
+        "tr",
+        "tbody",
+        "p",
+        "table",
+        "div",
+        "span"
+      ],
+      "has_tables": true,
+      "has_lists": true,
+      "section_codes": [
+        "34068-7",
+        "42229-5",
+        "43678-2"
+      ]
+    },
+    "label.dosageFormsAndStrengths": {
+      "occurrences": 8,
+      "max_length": 732,
+      "samples": [
+        "[HTML] 3 DOSAGE FORMS AND STRENGTHSEMGALITY is a sterile clear to opalescent, colorless to slightly yellow to slightly brown solution available as follows:Injection: 120\u00a0mg/mL in a single-dose prefilled penI..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "section",
+        "h2",
+        "p",
+        "li",
+        "ul",
+        "h1"
+      ],
+      "has_tables": false,
+      "has_lists": true,
+      "section_codes": [
+        "43678-2"
+      ]
+    },
+    "label.warningsAndPrecautions": {
+      "occurrences": 8,
+      "max_length": 16504,
+      "samples": [
+        "[HTML] 5 WARNINGS AND PRECAUTIONS5.1 Hypersensitivity ReactionsHypersensitivity reactions, including dyspnea, urticaria, and rash, have occurred with EMGALITY in clinical studies and the postmarketing settin..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "section",
+        "h2",
+        "span",
+        "p",
+        "li",
+        "ul",
+        "h1",
+        "div"
+      ],
+      "has_tables": false,
+      "has_lists": true,
+      "section_codes": [
+        "43685-7",
+        "42229-5"
+      ]
+    },
+    "label.adverseReactions": {
+      "occurrences": 8,
+      "max_length": 79905,
+      "samples": [
+        "[HTML] 6 ADVERSE REACTIONSThe following clinically significant adverse reactions are described elsewhere in the labeling:Hypersensitivity Reactions[see Contraindications (4) and Warnings and Precautions (5.1..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "caption",
+        "br",
+        "li",
+        "ul",
+        "td",
+        "h1",
+        "tfoot",
+        "col",
+        "h2",
+        "th",
+        "a",
+        "section",
+        "tr",
+        "tbody",
+        "p",
+        "table",
+        "div",
+        "thead",
+        "span"
+      ],
+      "has_tables": true,
+      "has_lists": true,
+      "section_codes": [
+        "88830-5",
+        "34084-4",
+        "90374-0",
+        "90375-7",
+        "42229-5"
+      ]
+    },
+    "label.clinicalPharmacology": {
+      "occurrences": 8,
+      "max_length": 15123,
+      "samples": [
+        "[HTML] 12 CLINICAL PHARMACOLOGY12.1 Mechanism of ActionGalcanezumab-gnlm is a humanized monoclonal antibody that binds to calcitonin gene-related peptide (CGRP) ligand and blocks its binding to the receptor...."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "caption",
+        "section",
+        "h2",
+        "span",
+        "br",
+        "tfoot",
+        "tr",
+        "p",
+        "tbody",
+        "table",
+        "td",
+        "h1",
+        "div",
+        "img",
+        "col"
+      ],
+      "has_tables": true,
+      "has_lists": false,
+      "section_codes": [
+        "43681-6",
+        "88830-5",
+        "43679-0",
+        "34090-1",
+        "43682-4",
+        "42229-5"
+      ]
+    },
+    "label.clinicalStudies": {
+      "occurrences": 8,
+      "max_length": 97461,
+      "samples": [
+        "[HTML] 14 CLINICAL STUDIES14.1 MigraineThe efficacy of EMGALITY was evaluated as a preventive treatment of episodic or chronic migraine in three multicenter, randomized, double-blind, placebo-controlled stud..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "caption",
+        "br",
+        "li",
+        "dl",
+        "ul",
+        "td",
+        "h1",
+        "dt",
+        "ol",
+        "tfoot",
+        "col",
+        "dd",
+        "h2",
+        "a",
+        "section",
+        "tr",
+        "tbody",
+        "p",
+        "table",
+        "div",
+        "img",
+        "span"
+      ],
+      "has_tables": true,
+      "has_lists": true,
+      "section_codes": [
+        "42229-5",
+        "34092-7"
+      ]
+    },
+    "label.howSupplied": {
+      "occurrences": 8,
+      "max_length": 2905,
+      "samples": [
+        "[HTML] 16.1 How SuppliedEMGALITY (galcanezumab-gnlm) injection is a sterile, preservative-free, clear to opalescent, colorless to slightly yellow to slightly brown solution for subcutaneous administration.EM..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "h2",
+        "section",
+        "tr",
+        "span",
+        "tbody",
+        "br",
+        "p",
+        "li",
+        "table",
+        "ul",
+        "td",
+        "h1",
+        "col"
+      ],
+      "has_tables": true,
+      "has_lists": true,
+      "section_codes": [
+        "34069-5"
+      ]
+    },
+    "label.useInSpecificPopulations": {
+      "occurrences": 8,
+      "max_length": 12370,
+      "samples": [
+        "[HTML] 8 USE IN SPECIFIC POPULATIONS8.1 PregnancyPregnancy Exposure RegistryThere is a pregnancy exposure registry that monitors pregnancy outcomes in women exposed to EMGALITY during pregnancy. Healthcare p..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "section",
+        "h2",
+        "span",
+        "p",
+        "h1",
+        "div"
+      ],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": [
+        "77291-3",
+        "88829-7",
+        "42228-7",
+        "77290-5",
+        "34082-8",
+        "43684-0",
+        "88828-9",
+        "34081-0",
+        "42229-5"
+      ]
+    },
+    "label.description": {
+      "occurrences": 8,
+      "max_length": 2322,
+      "samples": [
+        "[HTML] 11 DESCRIPTIONGalcanezumab-gnlm is a humanized IgG4 monoclonal antibody specific for calcitonin-gene related peptide (CGRP) ligand. Galcanezumab-gnlm is produced in Chinese Hamster Ovary (CHO) cells b..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "span",
+        "section",
+        "p",
+        "h1",
+        "div",
+        "img"
+      ],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": [
+        "34089-3"
+      ]
+    },
+    "label.nonclinicalToxicology": {
+      "occurrences": 8,
+      "max_length": 3621,
+      "samples": [
+        "[HTML] 13 NONCLINICAL TOXICOLOGY13.1 Carcinogenesis, Mutagenesis, Impairment of FertilityCarcinogenesisThe carcinogenic potential of galcanezumab-gnlm has not been assessed.MutagenesisGenetic toxicology stud..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "section",
+        "h2",
+        "span",
+        "p",
+        "h1",
+        "div"
+      ],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": [
+        "34091-9",
+        "42229-5",
+        "43680-8",
+        "34083-6"
+      ]
+    },
+    "label.instructionsForUse": {
+      "occurrences": 5,
+      "max_length": 22322,
+      "samples": [
+        "[HTML] INSTRUCTIONS FOR USEEMGALITY\u00ae(em-GAL-it-\u0113)(galcanezumab-gnlm)injection, for subcutaneous usePrefilled SyringeThis Instructions for Use is for patients with episodic cluster headache.If you are using E..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "dd",
+        "section",
+        "span",
+        "tr",
+        "br",
+        "tbody",
+        "p",
+        "li",
+        "table",
+        "dl",
+        "ul",
+        "td",
+        "dt",
+        "h1",
+        "div",
+        "img",
+        "col"
+      ],
+      "has_tables": true,
+      "has_lists": true,
+      "section_codes": [
+        "59845-8"
+      ]
+    },
+    "label.mechanismOfAction": {
+      "occurrences": 8,
+      "max_length": 1269,
+      "samples": [
+        "[HTML] 12.1 Mechanism of ActionGalcanezumab-gnlm is a humanized monoclonal antibody that binds to calcitonin gene-related peptide (CGRP) ligand and blocks its binding to the receptor...."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "h2",
+        "p",
+        "section"
+      ],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": [
+        "43679-0"
+      ]
+    },
+    "label.contraindications": {
+      "occurrences": 8,
+      "max_length": 756,
+      "samples": [
+        "[HTML] 4 CONTRAINDICATIONSEMGALITY is contraindicated in patients with serious hypersensitivity to galcanezumab-gnlm or to any of the excipients[see Warnings and Precautions (5.1)]...."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "span",
+        "section",
+        "p",
+        "li",
+        "ul",
+        "h1"
+      ],
+      "has_tables": false,
+      "has_lists": true,
+      "section_codes": [
+        "34070-3"
+      ]
+    },
+    "label.highlights.dosageAndAdministration": {
+      "occurrences": 8,
+      "max_length": 2253,
+      "samples": [
+        "[HTML] For subcutaneous use only. (2.1,2.2,2.3)Migraine recommended dosage: 240\u00a0mg loading dose (administered as two consecutive injections of 120\u00a0mg each), followed by monthly doses of 120\u00a0mg. (2.1)Episodic..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "span",
+        "p",
+        "li",
+        "ul",
+        "div"
+      ],
+      "has_tables": false,
+      "has_lists": true,
+      "section_codes": []
+    },
+    "label.boxedWarning": {
+      "occurrences": 3,
+      "max_length": 1841,
+      "samples": [
+        "[HTML] WARNING: SERIOUS INFECTIONS, MORTALITY, MALIGNANCY, MAJOR ADVERSE CARDIOVASCULAR EVENTS (MACE), and THROMBOSISSee full prescribing information for complete boxed warning.Increased risk of serious bact..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "span",
+        "h2",
+        "li",
+        "p",
+        "ul",
+        "div",
+        "h1"
+      ],
+      "has_tables": false,
+      "has_lists": true,
+      "section_codes": []
+    },
+    "label.drugInteractions": {
+      "occurrences": 5,
+      "max_length": 2951,
+      "samples": [
+        "[HTML] 7 DRUG INTERACTIONS7.1 Strong OAT3 InhibitorsBaricitinib exposure is increased when OLUMIANT is co-administered with strong OAT3 inhibitors (such as probenecid), hence the dosage of baricitinib should..."
+      ],
+      "is_html": true,
+      "html_tags": [
+        "a",
+        "section",
+        "h2",
+        "span",
+        "p",
+        "h1",
+        "div"
+      ],
+      "has_tables": false,
+      "has_lists": false,
+      "section_codes": [
+        "42229-5",
+        "34073-7"
+      ]
+    }
+  },
+  "html_fields": [
+    "label.indicationsAndUsage",
+    "label.dosageAndAdministration",
+    "label.dosageFormsAndStrengths",
+    "label.warningsAndPrecautions",
+    "label.adverseReactions",
+    "label.clinicalPharmacology",
+    "label.clinicalStudies",
+    "label.howSupplied",
+    "label.useInSpecificPopulations",
+    "label.description",
+    "label.nonclinicalToxicology",
+    "label.instructionsForUse",
+    "label.mechanismOfAction",
+    "label.contraindications",
+    "label.highlights.dosageAndAdministration",
+    "label.boxedWarning",
+    "label.drugInteractions"
+  ],
+  "key_sections": [
+    "label.indicationsAndUsage",
+    "label.dosageAndAdministration",
+    "label.dosageFormsAndStrengths",
+    "label.warningsAndPrecautions",
+    "label.adverseReactions",
+    "label.clinicalPharmacology",
+    "label.clinicalStudies",
+    "label.nonclinicalToxicology",
+    "label.contraindications",
+    "label.highlights.dosageAndAdministration",
+    "label.boxedWarning"
+  ],
+  "data_structure": {
+    "drugName": {
+      "type": "text",
+      "occurrences": 8
+    },
+    "setId": {
+      "type": "text",
+      "occurrences": 8
+    },
+    "slug": {
+      "type": "text",
+      "occurrences": 8
+    },
+    "labeler": {
+      "type": "text",
+      "occurrences": 8
+    },
+    "label": {
+      "genericName": {
+        "type": "text",
+        "occurrences": 8
+      },
+      "labelerName": {
+        "type": "text",
+        "occurrences": 8
+      },
+      "productType": {
+        "type": "text",
+        "occurrences": 8
+      },
+      "effectiveTime": {
+        "type": "text",
+        "occurrences": 8
+      },
+      "title": {
+        "type": "text",
+        "occurrences": 8
+      },
+      "indicationsAndUsage": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "dosageAndAdministration": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "dosageFormsAndStrengths": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "warningsAndPrecautions": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "adverseReactions": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "clinicalPharmacology": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "clinicalStudies": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "howSupplied": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "useInSpecificPopulations": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "description": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "nonclinicalToxicology": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "instructionsForUse": {
+        "type": "html",
+        "occurrences": 5
+      },
+      "mechanismOfAction": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "contraindications": {
+        "type": "html",
+        "occurrences": 8
+      },
+      "highlights": {
+        "dosageAndAdministration": {
+          "type": "html",
+          "occurrences": 8
+        }
+      },
+      "boxedWarning": {
+        "type": "html",
+        "occurrences": 3
+      },
+      "drugInteractions": {
+        "type": "html",
+        "occurrences": 5
+      }
+    }
+  }
+}
