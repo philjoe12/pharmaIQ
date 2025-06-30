@@ -70,3 +70,5 @@ data/cache/*
 # Markdown files
 *.md
 **/*.md
+# But keep README.md
+!README.md
