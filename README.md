@@ -13,39 +13,41 @@ A production-ready system that transforms FDA drug label JSON files into SEO-opt
 - 🔄 **Real-time Processing**: Bull queues for asynchronous AI processing
 - 📊 **MCP Integration**: Model Context Protocol for AI tool access
 
-## Quick Start (Under 5 Minutes)
+## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js 18+** and **npm**
 - **Docker** and **docker-compose**
-- **OpenAI API Key** (optional for demo)
+- **OpenAI API Key** (optional - uses demo mode without it)
 
 ### Setup
 
-1. **Clone and Setup Environment**
+1. **Clone the Repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/philjoe12/pharmaIQ.git
    cd pharmaIQ
+   ```
+
+2. **Configure Environment (Optional)**
+   ```bash
    cp .env.example .env
-   # Edit .env with your OpenAI API key (optional)
+   # Add your OpenAI API key to .env for AI features
    ```
 
-2. **Start the Platform**
+3. **Start Everything**
    ```bash
-   docker-compose -f infrastructure/docker/docker-compose.yml up
+   docker-compose up
    ```
-
-3. **Access the Application**
-   - **Frontend**: http://localhost:3000
-   - **API Gateway**: http://localhost:3001
-   - **API Documentation**: http://localhost:3001/api/docs
-   - **AI Worker Dashboard**: http://localhost:3003/admin/queues
-
-4. **Verify Setup**
+   
+   Or use the quick start script:
    ```bash
-   curl http://localhost:3001/health
-   curl http://localhost:3000/api/health
+   ./quick-start.sh
    ```
+   That's it! 🎉
+
+4. **Access the Application**
+   - **Main App**: http://localhost:3000
+   - **API**: http://localhost:3001
+   - **Health Check**: http://localhost:3001/health
 
 ## 🏗️ Architecture Overview
 
