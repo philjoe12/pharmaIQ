@@ -9,6 +9,8 @@
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "removeComments": true
+    "removeComments": true,
+    "strictPropertyInitialization": false,
+    "useDefineForClassFields": false
   }
 }

@@ -29,7 +29,7 @@ export class WorkflowController {
     } catch (error) {
       this.logger.error('Failed to process complete workflow:', error);
       throw new HttpException(
-        error.message || 'Complete workflow processing failed',
+        error instanceof Error ? error.message : 'Complete workflow processing failed',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -57,7 +57,7 @@ export class WorkflowController {
     } catch (error) {
       this.logger.error('Failed to process batch workflow:', error);
       throw new HttpException(
-        error.message || 'Batch workflow processing failed',
+        error instanceof Error ? error.message : 'Batch workflow processing failed',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -81,7 +81,7 @@ export class WorkflowController {
     } catch (error) {
       this.logger.error('Failed to generate sitemap:', error);
       throw new HttpException(
-        error.message || 'Sitemap generation failed',
+        error instanceof Error ? error.message : 'Sitemap generation failed',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -105,7 +105,7 @@ export class WorkflowController {
     } catch (error) {
       this.logger.error('Failed to get workflow stats:', error);
       throw new HttpException(
-        error.message || 'Failed to generate stats',
+        error instanceof Error ? error.message : 'Failed to generate stats',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -121,7 +121,7 @@ export class WorkflowController {
     } catch (error) {
       this.logger.error('Failed to run demo workflow:', error);
       throw new HttpException(
-        error.message || 'Demo workflow failed',
+        error instanceof Error ? error.message : 'Demo workflow failed',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

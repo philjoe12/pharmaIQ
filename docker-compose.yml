@@ -53,7 +53,9 @@ services:
 
   # Consolidated API Backend
   api:
-    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
     working_dir: /app/services/api-gateway
     ports:
       - "3001:3001"
@@ -110,9 +112,11 @@ services:
       - ./web/src:/app/web/src
       - ./web/public:/app/web/public
       - ./web/next.config.js:/app/web/next.config.js
-      - ./web/tailwind.config.js:/app/web/tailwind.config.js
+      - ./web/tailwind.config.ts:/app/web/tailwind.config.ts
+      - ./web/postcss.config.js:/app/web/postcss.config.js
       - ./web/tsconfig.json:/app/web/tsconfig.json
       - ./web/package.json:/app/web/package.json
+      - ./web/jest.setup.js:/app/web/jest.setup.js
       # Named volumes for dependencies and build artifacts
       - web-node-modules:/app/web/node_modules
     command: sh -c "npm install --prefer-offline --no-audit --progress=false --legacy-peer-deps && npm run dev"

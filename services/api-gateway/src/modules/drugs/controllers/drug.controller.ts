@@ -133,12 +133,12 @@ export class DrugController {
   async findByConditionWithAI(
     @Query('condition') condition: string,
     @Query('userType') userType: 'patient' | 'provider' | 'general' = 'general',
-    @Query('limit') limit: number = 10
+    @Query('limit') limit?: number
   ) {
     if (!condition || condition.length < 2) {
       throw new NotFoundException('Condition must be at least 2 characters');
     }
-    return this.drugService.findDrugsByConditionWithAI(condition, userType, limit);
+    return this.drugService.findDrugsByConditionWithAI(condition, userType, limit || 10);
   }
 
   @Post('discovery/smart-search')

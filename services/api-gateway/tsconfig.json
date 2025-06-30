@@ -1,18 +1,30 @@
 {
-  "extends": "../../tsconfig.node.json",
   "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2017",
+    "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "useDefineForClassFields": false,
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@pharmaiq/types": ["../../shared/types/src"],
+      "@pharmaiq/contracts": ["../../shared/contracts/src"],
+      "@pharmaiq/utils": ["../../shared/utils/src"]
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts", "**/*.test.ts"],
-  "references": [
-    { "path": "../../shared/types" },
-    { "path": "../../shared/contracts" },
-    { "path": "../../shared/utils" }
-  ]
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
 }
