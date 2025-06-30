@@ -72,3 +72,19 @@ data/cache/*
 **/*.md
 # But keep README.md
 !README.md
+
+# Local documentation files
+AI_TESTING_SUMMARY.md
+REQUIREMENTS_ANALYSIS.md
+REQUIREMENTS_CHECKLIST.md
+TESTING_STATUS.md
+CLAUDE.md
+
+# Screenshots and temporary files
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Development scripts output
+docker-compose.override.yml
