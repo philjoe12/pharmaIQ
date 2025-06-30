@@ -1,0 +1,182 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: pharmaiq
+      POSTGRES_PASSWORD: pharmaiq_dev
+      POSTGRES_DB: pharmaiq_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/docker/scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pharmaiq"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Consolidated API Backend
+  api:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      # Database
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: pharmaiq
+      DATABASE_PASSWORD: pharmaiq_dev
+      DATABASE_NAME: pharmaiq_db
+      DATABASE_URL: postgresql://pharmaiq:pharmaiq_dev@postgres:5432/pharmaiq_db
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # AI Configuration
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # Elasticsearch
+      ELASTICSEARCH_NODE: http://elasticsearch:9200
+    volumes:
+      # Source code for live editing
+      - ./services/api-gateway/src:/app/services/api-gateway/src
+      - ./services/api-gateway/package.json:/app/services/api-gateway/package.json
+      - ./services/api-gateway/nest-cli.json:/app/services/api-gateway/nest-cli.json
+      - ./services/api-gateway/tsconfig.json:/app/services/api-gateway/tsconfig.json
+      - ./shared:/app/shared
+      # Data directory for JSON files
+      - ./data:/app/data
+      # Named volumes for dependencies
+      - api-node-modules:/app/services/api-gateway/node_modules
+      - shared-types-node-modules:/app/shared/types/node_modules
+      - shared-contracts-node-modules:/app/shared/contracts/node_modules
+      - shared-utils-node-modules:/app/shared/utils/node_modules
+    command: sh -c "cd /app/services/api-gateway && npm install --no-save && npm run build && exec node dist/services/api-gateway/src/main.js"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+
+  # Web Frontend
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://api:3001
+    depends_on:
+      - api
+    volumes:
+      # Source code for live editing
+      - ./web/src:/app/web/src
+      - ./web/public:/app/web/public
+      - ./web/next.config.js:/app/web/next.config.js
+      - ./web/tailwind.config.js:/app/web/tailwind.config.js
+      - ./web/tsconfig.json:/app/web/tsconfig.json
+      # Named volumes for dependencies and build artifacts
+      - web-node-modules:/app/web/node_modules
+      - web-next:/app/web/.next
+    command: npm run dev
+
+  # AI Worker
+  ai-worker:
+    build:
+      context: .
+      dockerfile: services/ai-worker/Dockerfile
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/ai-worker/src:/app/services/ai-worker/src
+      - ai-worker-node-modules:/app/services/ai-worker/node_modules
+
+  # Processing Worker
+  processing-worker:
+    build:
+      context: .
+      dockerfile: services/processing-worker/Dockerfile
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: pharmaiq
+      DATABASE_PASSWORD: pharmaiq_dev
+      DATABASE_NAME: pharmaiq_db
+      DATABASE_URL: postgresql://pharmaiq:pharmaiq_dev@postgres:5432/pharmaiq_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/processing-worker/src:/app/services/processing-worker/src
+      - processing-worker-node-modules:/app/services/processing-worker/node_modules
+
+volumes:
+  # Database volumes
+  postgres-data:
+  redis-data:
+  elasticsearch-data:
+  # Named volumes for node_modules
+  api-node-modules:
+  web-node-modules:
+  ai-worker-node-modules:
+  processing-worker-node-modules:
+  # Shared package volumes
+  shared-types-node-modules:
+  shared-contracts-node-modules:
+  shared-utils-node-modules:
+  web-next:
+
+networks:
+  default:
+    name: pharmaiq-network

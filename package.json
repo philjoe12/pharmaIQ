@@ -1,0 +1,37 @@
+{
+  "name": "pharmaiq",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "web",
+    "shared/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:ai": "jest tests/integration/ai-*.test.ts --detectOpenHandles --forceExit",
+    "test:ai-production": "jest tests/integration/ai-production-validation.test.ts --detectOpenHandles --forceExit",
+    "test:ai-service-selection": "jest tests/integration/ai-service-selection.test.ts --detectOpenHandles --forceExit",
+    "test:ai-reliability": "jest tests/integration/ai-reliability-fallback.test.ts --detectOpenHandles --forceExit",
+    "test:ai-prompting": "jest tests/integration/ai-prompting-strategy.test.ts --detectOpenHandles --forceExit",
+    "test:ai-hallucination": "jest tests/integration/ai-hallucination-prevention.test.ts --detectOpenHandles --forceExit",
+    "lint": "turbo run lint",
+    "docker:up": "docker-compose -f infrastructure/docker/docker-compose.yml up",
+    "docker:down": "docker-compose -f infrastructure/docker/docker-compose.yml down",
+    "docker:build": "docker-compose -f infrastructure/docker/docker-compose.yml build",
+    "type-check": "turbo run type-check"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.1",
+    "@types/node": "^20.10.5",
+    "puppeteer": "^24.11.1",
+    "turbo": "^1.11.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

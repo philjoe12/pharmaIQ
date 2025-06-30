@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "noEmit": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [],
+  "files": [],
+  "references": [
+    { "path": "./web" },
+    { "path": "./services/api-gateway" },
+    { "path": "./services/ai-worker" },
+    { "path": "./services/processing-worker" },
+    { "path": "./services/seo-worker" },
+    { "path": "./shared/types" },
+    { "path": "./shared/contracts" },
+    { "path": "./shared/utils" }
+  ]
+}
