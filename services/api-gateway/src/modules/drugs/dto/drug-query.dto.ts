@@ -1,7 +1,7 @@
 import { IsOptional, IsString, IsEnum, IsNumber, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { DrugStatus } from '@pharmaiq/types';
+import { DrugStatus } from '../../../shared-types';
 
 export class DrugQueryDto {
   @ApiPropertyOptional({ description: 'Search by drug name' })

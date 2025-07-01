@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AICacheService } from '../../../common/services/ai-cache.service';
-import { DrugLabel } from '@pharmaiq/types';
+import { DrugLabel } from '../../../shared-types';
 import OpenAI from 'openai';
 
 export interface ComparisonRequest {

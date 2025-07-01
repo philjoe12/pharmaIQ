@@ -4,7 +4,7 @@ import { DrugService } from '../services/drug.service';
 import { DrugCacheService } from '../services/drug-cache.service';
 import { DrugQueryDto } from '../dto/drug-query.dto';
 import { DrugDto } from '../dto/drug.dto';
-import { DrugStatus, PaginatedResponse, ApiResponse as ApiResponseType } from '@pharmaiq/types';
+import { DrugStatus, PaginatedResponse, ApiResponse as ApiResponseType } from '../../../shared-types';
 
 @ApiTags('Drug Administration')
 @Controller('admin/drugs')

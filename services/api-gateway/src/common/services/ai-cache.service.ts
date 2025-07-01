@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-import { AiEnhancedContentEntity, SeoMetadataEntity, ProcessedDrugData } from '@pharmaiq/types';
+import { AiEnhancedContentEntity, SeoMetadataEntity, ProcessedDrugData } from '../../shared-types';
 
 export interface CacheConfig {
   host: string;

@@ -8,7 +8,7 @@ import {
   OneToOne,
   OneToMany,
 } from 'typeorm';
-import { DrugStatus } from '@pharmaiq/types';
+import { DrugStatus } from '../../shared-types';
 import { DrugContentEntity } from './drug-content.entity';
 import { SEOMetadataEntity } from './seo-metadata.entity';
 import { ProcessingLogEntity } from './processing-log.entity';

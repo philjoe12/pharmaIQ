@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
-import { FDALabel } from '@pharmaiq/types';
+import { FDALabel } from '../../../shared-types';
 import { 
   generateSEOTitlePrompt,
   generateMetaDescriptionPrompt,

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DrugLabel } from '@pharmaiq/types';
+import { DrugLabel } from '../../../shared-types';
 
 export interface ProcessingResult {
   drugName: string;

@@ -53,9 +53,7 @@ services:
 
   # Consolidated API Backend
   api:
-    build:
-      context: .
-      dockerfile: ./services/api-gateway/Dockerfile
+    image: node:20-alpine
     working_dir: /app/services/api-gateway
     ports:
       - "3001:3001"
@@ -77,17 +75,11 @@ services:
       # Elasticsearch
       ELASTICSEARCH_NODE: http://elasticsearch:9200
     volumes:
-      # Source code for live editing
-      - ./services/api-gateway/src:/app/services/api-gateway/src
-      - ./services/api-gateway/package.json:/app/services/api-gateway/package.json
-      - ./services/api-gateway/nest-cli.json:/app/services/api-gateway/nest-cli.json
-      - ./services/api-gateway/tsconfig.json:/app/services/api-gateway/tsconfig.json
-      - ./shared:/app/shared
-      # Data directory for JSON files
-      - ./data:/app/data
+      # Mount the entire project so shared types work
+      - .:/app
       # Named volumes for dependencies
       - api-node-modules:/app/services/api-gateway/node_modules
-    command: sh -c "npm install --prefer-offline --no-audit --progress=false --legacy-peer-deps && npm run start:dev"
+    command: sh -c "npm install && npx ts-node -r tsconfig-paths/register src/main.ts"
     depends_on:
       postgres:
         condition: service_healthy

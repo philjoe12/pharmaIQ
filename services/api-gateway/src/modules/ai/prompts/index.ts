@@ -1,4 +1,4 @@
-import { DrugLabel } from '@pharmaiq/types';
+import { DrugLabel } from '../../../shared-types';
 
 export function generateSEOTitlePrompt(drug: DrugLabel): string {
   const cleanIndications = drug.label.indicationsAndUsage?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();

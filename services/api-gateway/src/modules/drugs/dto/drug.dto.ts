@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsEnum, IsArray, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { DrugStatus } from '@pharmaiq/types';
+import { DrugStatus } from '../../../shared-types';
 
 export class DrugDto {
   @ApiProperty({ description: 'Drug ID' })

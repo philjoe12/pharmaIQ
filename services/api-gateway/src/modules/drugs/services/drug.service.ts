@@ -4,7 +4,7 @@ import { Queue } from 'bull';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { DrugQueryDto } from '../dto/drug-query.dto';
-import { DrugStatus, PaginatedResponse, DrugLabel } from '@pharmaiq/types';
+import { DrugStatus, PaginatedResponse, DrugLabel } from '../../../shared-types';
 import { DrugRepository } from '../../../database/repositories/drug.repository';
 import { DrugEntity } from '../../../database/entities/drug.entity';
 import { SearchAggregatorService } from '../../search/services/search-aggregator.service';
