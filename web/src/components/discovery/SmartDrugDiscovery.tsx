@@ -24,10 +24,11 @@ interface SearchResult {
 
 interface SmartSearchResponse {
   query: string;
-  searchIntent: any;
+  searchIntent?: any;
   totalFound: number;
   drugs: SearchResult[];
-  suggestions: string[];
+  suggestions?: string[];
+  suggestedQueries?: string[];
 }
 
 const therapeuticAreas = [
@@ -58,11 +59,13 @@ export function SmartDrugDiscovery() {
   const [conditionResults, setConditionResults] = useState<any>(null);
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSmartSearch = async () => {
     if (!query.trim()) return;
     
     setIsSearching(true);
+    setError(null);
     try {
       const response = await fetch('/api/drugs/discovery/smart-search', {
         method: 'POST',
@@ -76,12 +79,37 @@ export function SmartDrugDiscovery() {
       
       if (response.ok) {
         const data = await response.json();
-        setSearchResults(data);
+        // Ensure data has the expected structure
+        const validatedData = {
+          query: data.query || query,
+          totalFound: data.totalFound || 0,
+          drugs: data.drugs || [],
+          suggestedQueries: data.suggestedQueries || []
+        };
+        setSearchResults(validatedData);
         setConditionResults(null);
         setSelectedCondition(null);
+      } else {
+        // Handle error response
+        console.error('Search API returned error:', response.status);
+        setError(`Search failed: ${response.statusText || 'Unknown error'}`);
+        setSearchResults({
+          query: query,
+          totalFound: 0,
+          drugs: [],
+          suggestedQueries: []
+        });
       }
     } catch (error) {
       console.error('Search failed:', error);
+      setError('Failed to perform search. Please try again.');
+      // Set empty results on error
+      setSearchResults({
+        query: query,
+        totalFound: 0,
+        drugs: [],
+        suggestedQueries: []
+      });
     } finally {
       setIsSearching(false);
     }
@@ -122,7 +150,7 @@ export function SmartDrugDiscovery() {
     handleGetSuggestions();
   }, [userType]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSmartSearch();
     }
@@ -166,7 +194,7 @@ export function SmartDrugDiscovery() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder="Ask in natural language: 'What medications treat high blood pressure?' or 'Show me diabetes drugs'"
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -239,6 +267,13 @@ export function SmartDrugDiscovery() {
         </div>
       </Card>
 
+      {/* Error Display */}
+      {error && (
+        <Card className="p-4 bg-red-50 border-red-200">
+          <p className="text-red-600">{error}</p>
+        </Card>
+      )}
+
       {/* Search Results */}
       {isSearching && (
         <Card className="p-8 text-center">
@@ -248,7 +283,7 @@ export function SmartDrugDiscovery() {
       )}
 
       {/* Smart Search Results */}
-      {searchResults && (
+      {searchResults && !isSearching && (
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -260,7 +295,7 @@ export function SmartDrugDiscovery() {
           </div>
 
           <div className="space-y-4">
-            {searchResults.drugs && searchResults.drugs.length > 0 ? searchResults.drugs.map((drug) => (
+            {searchResults?.drugs && searchResults.drugs.length > 0 ? searchResults.drugs.map((drug) => (
               <div key={drug.setId} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

@@ -106,27 +106,37 @@ export class DrugController {
   @ApiBody({ type: CompareDrugsDto })
   @ApiResponse({ status: 200, description: 'Return AI-powered drug comparison' })
   async compareDrugsWithAI(@Body() compareDto: CompareDrugsDto) {
-    // Fetch the drugs first
-    const drugs = await this.drugService.compareDrugsByIds(compareDto.drugIds);
-    
-    if (drugs.length < 2) {
-      throw new NotFoundException('At least 2 valid drugs required for comparison');
-    }
-
-    // Generate AI comparison
-    const aiAnalysis = await this.aiService.compareDrugs(drugs);
-    
-    // Generate comparison matrix
-    const comparisonMatrix = this.generateComparisonMatrix(drugs);
-    
-    return {
-      success: true,
-      data: {
-        drugs,
-        aiAnalysis,
-        comparisonMatrix
+    try {
+      console.log('Compare drugs request:', compareDto);
+      
+      // Fetch the drugs first
+      const drugs = await this.drugService.compareDrugsByIds(compareDto.drugIds);
+      console.log(`Found ${drugs.length} drugs for comparison`);
+      
+      if (drugs.length < 2) {
+        throw new NotFoundException('At least 2 valid drugs required for comparison');
       }
-    };
+
+      // Generate AI comparison
+      console.log('Generating AI analysis...');
+      const aiAnalysis = await this.aiService.compareDrugs(drugs);
+      console.log('AI analysis generated:', aiAnalysis ? 'success' : 'failed');
+      
+      // Generate comparison matrix
+      const comparisonMatrix = this.generateComparisonMatrix(drugs);
+      
+      return {
+        success: true,
+        data: {
+          drugs,
+          aiAnalysis,
+          comparisonMatrix
+        }
+      };
+    } catch (error) {
+      console.error('Error in compareDrugsWithAI:', error);
+      throw error;
+    }
   }
 
   private generateComparisonMatrix(drugs: any[]) {

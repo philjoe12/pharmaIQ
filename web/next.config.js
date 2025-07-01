@@ -137,6 +137,11 @@ const nextConfig = {
         source: '/healthz',
         destination: '/api/health',
       },
+      // Proxy API requests to backend
+      {
+        source: '/api/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/:path*` : 'http://localhost:3001/:path*',
+      },
     ];
   },
 }

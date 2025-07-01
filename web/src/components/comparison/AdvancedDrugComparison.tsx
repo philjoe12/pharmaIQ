@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, X, ArrowUpDown, Star, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { 
+  Search, Plus, X, ArrowUpDown, Star, AlertTriangle, 
+  CheckCircle, Info, TrendingUp, BarChart3,
+  AlertCircle, Sparkles, Brain, ChevronDown, ChevronUp
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -14,6 +18,27 @@ interface DrugForComparison {
   slug: string;
   label: any;
   aiContent?: any;
+  dataCompleteness?: {
+    score: number;
+    missingFields: string[];
+    enrichedFields: {
+      field: string;
+      confidence: number;
+      source: 'original' | 'ai_generated' | 'inferred';
+    }[];
+  };
+  userSpecificContent?: {
+    patient?: {
+      summary: string;
+      keyPoints: string[];
+      readabilityScore: number;
+    };
+    provider?: {
+      clinicalSummary: string;
+      prescribingHighlights: string[];
+      contraindications: string[];
+    };
+  };
 }
 
 interface ComparisonMatrix {
@@ -115,19 +140,48 @@ export function AdvancedDrugComparison() {
   const [isComparing, setIsComparing] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<string>('general');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['efficacy', 'safety']);
+  const [viewMode, setViewMode] = useState<'grid' | 'table' | 'visual'>('grid');
+  const [userType] = useState<'patient' | 'provider' | 'general'>('general');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['summary']));
+  const [aiSearchEnabled, setAiSearchEnabled] = useState(true);
 
   const searchDrugs = async (query: string) => {
+    console.log('searchDrugs called with query:', query);
     if (!query.trim()) {
       setSearchResults([]);
       return;
     }
 
     setIsSearching(true);
+    console.log('Starting drug search...');
     try {
-      const response = await fetch(`/api/drugs?search=${encodeURIComponent(query)}&limit=10`);
+      let endpoint = `/api/drugs?search=${encodeURIComponent(query)}&limit=10`;
+      
+      // Use AI-powered search if enabled and query looks like natural language
+      if (aiSearchEnabled && query.split(' ').length > 2) {
+        const response = await fetch('/api/drugs/discovery/smart-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: query,
+            userType: userType,
+            limit: 10
+          })
+        });
+        
+        if (response.ok) {
+          const smartData = await response.json();
+          if (smartData.drugs && smartData.drugs.length > 0) {
+            setSearchResults(smartData.drugs);
+            return;
+          }
+        }
+      }
+      
+      // Fallback to regular search
+      const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        // Handle the response data structure
         if (data.success && data.data) {
           setSearchResults(data.data);
         } else if (Array.isArray(data)) {
@@ -163,49 +217,75 @@ export function AdvancedDrugComparison() {
   };
 
   const performComparison = async () => {
+    console.log('=== COMPARE DRUGS CLICKED ===');
+    console.log('Selected drugs:', selectedDrugs);
+    console.log('User type:', userType);
+    console.log('Scenario:', selectedScenario);
+    console.log('Categories:', selectedCategories);
+    
     if (selectedDrugs.length < 2) {
       alert('Please select at least 2 drugs to compare');
       return;
     }
 
     setIsComparing(true);
+    const requestBody = {
+      drugIds: selectedDrugs.map(d => d.setId),
+      userType: userType,
+      scenario: selectedScenario,
+      categories: selectedCategories
+    };
+    console.log('Request body to send:', JSON.stringify(requestBody, null, 2));
+    
     try {
-      const response = await fetch('/api/drugs', {
+      console.log('Fetching from: /api/drugs/compare/ai');
+      const response = await fetch('/api/drugs/compare/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          drugSlugs: selectedDrugs.map(d => d.slug),
-          analysisType: 'comparison'
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+      
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
       if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          // Transform the data to match our ComparisonMatrix interface
-          const transformedData: ComparisonMatrix = {
-            drugs: result.data.drugs,
-            aiAnalysis: result.data.aiAnalysis || {
-              overallRecommendation: 'AI analysis is currently unavailable. Basic comparison data is shown below.',
-              keyDifferences: [],
-              effectivenessComparison: [],
-              safetyProfile: [],
-              costEffectiveness: [],
-              patientPreferences: []
-            },
-            comparisonMatrix: result.data.comparisonMatrix || []
-          };
-          setComparisonData(transformedData);
+        try {
+          const result = JSON.parse(responseText);
+          console.log('Parsed response:', result);
+          
+          if (result.success && result.data) {
+            console.log('Setting comparison data...');
+            setComparisonData(result.data);
+            console.log('Comparison data set successfully!');
+          } else {
+            console.error('Invalid response structure:', result);
+            alert('Received invalid response from server');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse response:', parseError);
+          alert('Failed to parse server response');
         }
       } else {
-        const error = await response.json();
-        console.error('Comparison failed:', error);
-        alert('Failed to compare drugs. Please try again.');
+        try {
+          const error = JSON.parse(responseText);
+          console.error('API Error:', error);
+          alert(`Failed to compare drugs: ${error.message || 'Unknown error'}`);
+        } catch {
+          console.error('Non-JSON error response:', responseText);
+          alert(`Server error: ${response.statusText}`);
+        }
       }
     } catch (error) {
-      console.error('Comparison failed:', error);
-      alert('Failed to compare drugs. Please try again.');
+      console.error('Network/fetch error:', error);
+      alert(`Network error: ${(error as Error).message || 'Failed to connect to server'}`);
     } finally {
+      console.log('Comparison request completed');
       setIsComparing(false);
     }
   };
@@ -235,22 +315,57 @@ export function AdvancedDrugComparison() {
     return 'text-red-600';
   };
 
+  const toggleSection = (section: string) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(section)) {
+      newExpanded.delete(section);
+    } else {
+      newExpanded.add(section);
+    }
+    setExpandedSections(newExpanded);
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Drug Selection */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Select Drugs to Compare</h3>
         
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for drugs to compare..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+        {/* Search Bar with AI Toggle */}
+        <div className="space-y-2 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-gray-700">Search for drugs</label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAiSearchEnabled(!aiSearchEnabled)}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  aiSearchEnabled 
+                    ? 'bg-purple-100 text-purple-700' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                <Sparkles className="h-3 w-3" />
+                AI Search {aiSearchEnabled ? 'On' : 'Off'}
+              </button>
+            </div>
+          </div>
+          <div className="relative">
+            {aiSearchEnabled ? (
+              <Brain className="absolute left-3 top-3 h-5 w-5 text-purple-500" />
+            ) : (
+              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+            )}
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={aiSearchEnabled 
+                ? "Try: 'drugs for diabetes with low side effects' or 'alternatives to metformin'"
+                : "Search by drug name, generic name, or condition..."
+              }
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
           
           {/* Search Results */}
           {searchResults.length > 0 && (
@@ -377,25 +492,88 @@ export function AdvancedDrugComparison() {
       {/* Comparison Results */}
       {comparisonData && (
         <div className="space-y-6">
+          {/* View Mode Selector */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Comparison Results</h2>
+            <div className="flex gap-2">
+              {(['grid', 'table', 'visual'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    viewMode === mode
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {mode === 'grid' && <BarChart3 className="h-4 w-4 inline mr-2" />}
+                  {mode === 'table' && <ArrowUpDown className="h-4 w-4 inline mr-2" />}
+                  {mode === 'visual' && <TrendingUp className="h-4 w-4 inline mr-2" />}
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Data Quality Warning */}
+          {selectedDrugs.some(d => d.dataCompleteness && d.dataCompleteness.score < 0.8) && (
+            <Card className="p-4 bg-yellow-50 border-yellow-200">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-yellow-900">Data Quality Notice</h4>
+                  <p className="text-sm text-yellow-800 mt-1">
+                    Some drugs have incomplete data. AI has enhanced missing information where possible.
+                  </p>
+                  <div className="mt-2 space-y-1">
+                    {selectedDrugs
+                      .filter(d => d.dataCompleteness && d.dataCompleteness.score < 0.8)
+                      .map(drug => (
+                        <div key={drug.setId} className="text-sm">
+                          <span className="font-medium">{drug.drugName}:</span>{' '}
+                          {Math.round((drug.dataCompleteness?.score || 0) * 100)}% complete
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* AI Summary */}
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">AI Analysis Summary</h3>
-            <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <p className="text-blue-900">{comparisonData.aiAnalysis.overallRecommendation}</p>
-            </div>
+            <button
+              onClick={() => toggleSection('summary')}
+              className="w-full flex items-center justify-between mb-4"
+            >
+              <h3 className="text-lg font-semibold">AI Analysis Summary</h3>
+              {expandedSections.has('summary') ? (
+                <ChevronUp className="h-5 w-5" />
+              ) : (
+                <ChevronDown className="h-5 w-5" />
+              )}
+            </button>
             
-            {comparisonData.aiAnalysis.keyDifferences.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-2">Key Differences:</h4>
-                <ul className="space-y-1">
-                  {comparisonData.aiAnalysis.keyDifferences.map((diff, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="w-1 h-1 bg-blue-500 rounded-full mt-2"></span>
-                      <span className="text-sm text-gray-700">{diff}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            {expandedSections.has('summary') && (
+              <>
+                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                  <p className="text-blue-900">{comparisonData.aiAnalysis.overallRecommendation}</p>
+                </div>
+                
+                {comparisonData.aiAnalysis.keyDifferences.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Key Differences:</h4>
+                    <ul className="space-y-1">
+                      {comparisonData.aiAnalysis.keyDifferences.map((diff, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="w-1 h-1 bg-blue-500 rounded-full mt-2"></span>
+                          <span className="text-sm text-gray-700">{diff}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
           </Card>
 
