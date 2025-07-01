@@ -127,10 +127,18 @@ export function AdvancedDrugComparison() {
       const response = await fetch(`/api/drugs?search=${encodeURIComponent(query)}&limit=10`);
       if (response.ok) {
         const data = await response.json();
-        setSearchResults(data.data || []);
+        // Handle the response data structure
+        if (data.success && data.data) {
+          setSearchResults(data.data);
+        } else if (Array.isArray(data)) {
+          setSearchResults(data);
+        } else {
+          setSearchResults([]);
+        }
       }
     } catch (error) {
       console.error('Search failed:', error);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -162,23 +170,41 @@ export function AdvancedDrugComparison() {
 
     setIsComparing(true);
     try {
-      const response = await fetch('/api/drugs/compare/advanced', {
+      const response = await fetch('/api/drugs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          drugIds: selectedDrugs.map(d => d.setId),
-          scenario: selectedScenario,
-          categories: selectedCategories,
-          includeAI: true
+          drugSlugs: selectedDrugs.map(d => d.slug),
+          analysisType: 'comparison'
         })
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setComparisonData(data);
+        const result = await response.json();
+        if (result.success && result.data) {
+          // Transform the data to match our ComparisonMatrix interface
+          const transformedData: ComparisonMatrix = {
+            drugs: result.data.drugs,
+            aiAnalysis: result.data.aiAnalysis || {
+              overallRecommendation: 'AI analysis is currently unavailable. Basic comparison data is shown below.',
+              keyDifferences: [],
+              effectivenessComparison: [],
+              safetyProfile: [],
+              costEffectiveness: [],
+              patientPreferences: []
+            },
+            comparisonMatrix: result.data.comparisonMatrix || []
+          };
+          setComparisonData(transformedData);
+        }
+      } else {
+        const error = await response.json();
+        console.error('Comparison failed:', error);
+        alert('Failed to compare drugs. Please try again.');
       }
     } catch (error) {
       console.error('Comparison failed:', error);
+      alert('Failed to compare drugs. Please try again.');
     } finally {
       setIsComparing(false);
     }

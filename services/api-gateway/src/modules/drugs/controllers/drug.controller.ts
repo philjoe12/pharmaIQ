@@ -20,12 +20,17 @@ import {
 import { DrugService } from '../services/drug.service';
 import { DrugQueryDto } from '../dto/drug-query.dto';
 import { DrugDto } from '../dto/drug.dto';
+import { CompareDrugsDto } from '../dto/compare-drugs.dto';
+import { AIService } from '../../ai/services/ai.service';
 
 @ApiTags('drugs')
 @Controller('drugs')
 @UseInterceptors(ClassSerializerInterceptor)
 export class DrugController {
-  constructor(private readonly drugService: DrugService) {}
+  constructor(
+    private readonly drugService: DrugService,
+    private readonly aiService: AIService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all drugs with pagination' })
@@ -94,6 +99,112 @@ export class DrugController {
     }
 
     return this.drugService.compareDrugs(slugArray);
+  }
+
+  @Post('compare/ai')
+  @ApiOperation({ summary: 'Compare drugs with AI analysis' })
+  @ApiBody({ type: CompareDrugsDto })
+  @ApiResponse({ status: 200, description: 'Return AI-powered drug comparison' })
+  async compareDrugsWithAI(@Body() compareDto: CompareDrugsDto) {
+    // Fetch the drugs first
+    const drugs = await this.drugService.compareDrugsByIds(compareDto.drugIds);
+    
+    if (drugs.length < 2) {
+      throw new NotFoundException('At least 2 valid drugs required for comparison');
+    }
+
+    // Generate AI comparison
+    const aiAnalysis = await this.aiService.compareDrugs(drugs);
+    
+    // Generate comparison matrix
+    const comparisonMatrix = this.generateComparisonMatrix(drugs);
+    
+    return {
+      success: true,
+      data: {
+        drugs,
+        aiAnalysis,
+        comparisonMatrix
+      }
+    };
+  }
+
+  private generateComparisonMatrix(drugs: any[]) {
+    return [
+      {
+        category: 'Basic Information',
+        metrics: [
+          {
+            metric: 'Generic Name',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: drug.genericName || drug.label?.genericName || 'N/A'
+            }))
+          },
+          {
+            metric: 'Manufacturer',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: drug.manufacturer || drug.labeler || 'N/A'
+            }))
+          },
+          {
+            metric: 'Drug Class',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: drug.label?.pharmacologicClass || 'N/A'
+            }))
+          }
+        ]
+      },
+      {
+        category: 'Administration',
+        metrics: [
+          {
+            metric: 'Route',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: drug.label?.routeOfAdministration || 'N/A'
+            }))
+          },
+          {
+            metric: 'Dosage Forms',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: drug.label?.dosageFormsAndStrengths || 'N/A'
+            }))
+          }
+        ]
+      },
+      {
+        category: 'Clinical Use',
+        metrics: [
+          {
+            metric: 'Primary Indications',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: this.extractFirstSentence(drug.label?.indicationsAndUsage) || 'N/A'
+            }))
+          },
+          {
+            metric: 'Key Contraindications',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: this.extractFirstSentence(drug.label?.contraindications) || 'N/A'
+            }))
+          }
+        ]
+      }
+    ];
+  }
+
+  private extractFirstSentence(text: string | undefined): string {
+    if (!text) return '';
+    return text
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(/[.!?]/)[0] || '';
   }
 
   @Post('import')

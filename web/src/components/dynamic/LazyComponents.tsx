@@ -15,7 +15,7 @@ const LoadingComponent = ({ message = 'Loading...' }: { message?: string }) => (
 
 // Heavy components that should be lazy loaded
 export const AdvancedDrugComparison = dynamic(
-  () => import('../comparison/AdvancedDrugComparison'),
+  () => import('../comparison/AdvancedDrugComparison').then(mod => ({ default: mod.AdvancedDrugComparison })),
   {
     loading: () => <LoadingComponent message="Loading drug comparison tool..." />,
     ssr: false, // Disable SSR for this component as it's interactive
@@ -31,7 +31,7 @@ export const SmartDrugDiscovery = dynamic(
 );
 
 export const DrugComparisonTable = dynamic(
-  () => import('../comparison/ComparisonTable'),
+  () => import('../comparison/ComparisonTable').then(mod => ({ default: mod.ComparisonTable })),
   {
     loading: () => <LoadingComponent message="Loading comparison table..." />,
     ssr: true,

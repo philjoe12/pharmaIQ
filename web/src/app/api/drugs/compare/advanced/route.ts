@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.API_GATEWAY_URL || 'http://localhost:3001';
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://api:3001';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,40 +14,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use the AI comparison service in the backend
-    const aiComparisonResponse = await fetch(`${API_BASE_URL}/ai/compare`, {
+    // First, get the drugs data
+    const drugsResponse = await fetch(`${API_GATEWAY_URL}/drugs/compare-ids`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        drugIds,
-        scenario: scenario || 'general',
-        categories: categories || ['efficacy', 'safety'],
-        includeAI: includeAI !== false
-      }),
+      body: JSON.stringify({ ids: drugIds }),
     });
 
-    if (!aiComparisonResponse.ok) {
-      // Fallback to basic comparison if AI service fails
-      console.warn('AI comparison service failed, falling back to basic comparison');
-      
-      const basicComparisonResponse = await fetch(`${API_BASE_URL}/drugs/compare/${drugIds.join(',')}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!basicComparisonResponse.ok) {
-        throw new Error(`Failed to get comparison data: ${basicComparisonResponse.status}`);
-      }
-
-      const drugs = await basicComparisonResponse.json();
-      
-      // Generate fallback comparison with mock data
-      const fallbackMatrix = await generateComparisonMatrix(drugs, scenario, categories, includeAI);
-      return NextResponse.json(fallbackMatrix);
+    if (!drugsResponse.ok) {
+      throw new Error(`Failed to get drugs data: ${drugsResponse.status}`);
     }
 
-    const aiComparisonResult = await aiComparisonResponse.json();
-    return NextResponse.json(aiComparisonResult);
+    const drugs = await drugsResponse.json();
+    
+    // Generate AI-enhanced comparison matrix
+    const comparisonMatrix = await generateComparisonMatrix(drugs, scenario, categories, includeAI);
+    
+    // If AI is requested, try to get AI analysis
+    if (includeAI) {
+      try {
+        const aiResponse = await fetch(`${API_GATEWAY_URL}/ai/drugs/compare`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            drugs: drugs.map((d: any) => ({
+              setId: d.setId,
+              drugName: d.drugName,
+              label: d.label
+            })),
+            scenario,
+            categories
+          }),
+        });
+        
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          comparisonMatrix.aiAnalysis = aiData.analysis || comparisonMatrix.aiAnalysis;
+        }
+      } catch (aiError) {
+        console.error('AI service error:', aiError);
+        // Continue with fallback AI analysis
+      }
+    }
+    
+    return NextResponse.json(comparisonMatrix);
 
   } catch (error) {
     console.error('Advanced comparison API error:', error);
@@ -244,7 +254,9 @@ function generateDetailedMatrix(drugs: any[], categories: string[]) {
 function extractIndication(drug: any): string {
   const indications = drug.label?.indicationsAndUsage;
   if (indications && typeof indications === 'string') {
-    return indications.substring(0, 100) + (indications.length > 100 ? '...' : '');
+    // Remove HTML tags and get clean text
+    const cleanText = indications.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return cleanText.substring(0, 150) + (cleanText.length > 150 ? '...' : '');
   }
   return '';
 }

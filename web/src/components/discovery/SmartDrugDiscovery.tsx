@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, Sparkles, Heart, Brain, Lungs, Stomach, Shield, Activity } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Filter, Sparkles, Heart, Brain, Stethoscope, Pill, Shield, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -32,8 +33,8 @@ interface SmartSearchResponse {
 const therapeuticAreas = [
   { name: 'Cardiovascular', icon: Heart, color: 'bg-red-100 text-red-600', condition: 'heart disease' },
   { name: 'Neurological', icon: Brain, color: 'bg-purple-100 text-purple-600', condition: 'neurological disorders' },
-  { name: 'Respiratory', icon: Lungs, color: 'bg-blue-100 text-blue-600', condition: 'respiratory conditions' },
-  { name: 'Gastrointestinal', icon: Stomach, color: 'bg-green-100 text-green-600', condition: 'digestive issues' },
+  { name: 'Respiratory', icon: Stethoscope, color: 'bg-blue-100 text-blue-600', condition: 'respiratory conditions' },
+  { name: 'Gastrointestinal', icon: Pill, color: 'bg-green-100 text-green-600', condition: 'digestive issues' },
   { name: 'Immunological', icon: Shield, color: 'bg-yellow-100 text-yellow-600', condition: 'immune disorders' },
   { name: 'Endocrine', icon: Activity, color: 'bg-indigo-100 text-indigo-600', condition: 'metabolic conditions' },
 ];
@@ -264,9 +265,9 @@ export function SmartDrugDiscovery() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h4 className="font-semibold text-lg text-blue-600">
-                      <a href={`/drugs/${drug.slug}`} className="hover:underline">
+                      <Link href={`/drugs/${drug.slug}`} className="hover:underline">
                         {drug.drugName}
-                      </a>
+                      </Link>
                     </h4>
                     {drug.genericName && (
                       <p className="text-gray-600">Generic: {drug.genericName}</p>
@@ -296,6 +297,18 @@ export function SmartDrugDiscovery() {
                       </div>
                     </div>
                   )}
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <Link 
+                    href={`/drugs/${drug.slug}`}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    View Drug Details
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
                 </div>
               </div>
             ))}
@@ -334,9 +347,9 @@ export function SmartDrugDiscovery() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h4 className="font-semibold text-lg text-blue-600">
-                      <a href={`/drugs/${drug.slug}`} className="hover:underline">
+                      <Link href={`/drugs/${drug.slug}`} className="hover:underline">
                         {drug.drugName}
-                      </a>
+                      </Link>
                     </h4>
                     {drug.genericName && (
                       <p className="text-gray-600">Generic: {drug.genericName}</p>
@@ -372,6 +385,18 @@ export function SmartDrugDiscovery() {
                       </div>
                     </div>
                   )}
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <Link 
+                    href={`/drugs/${drug.slug}`}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    View Drug Details
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
                 </div>
               </div>
             ))}

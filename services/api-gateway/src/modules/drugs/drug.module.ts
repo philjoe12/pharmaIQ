@@ -11,6 +11,7 @@ import { DrugEventsPublisher } from '../events/publishers/drug-events.publisher'
 import { BasePublisher } from '../events/publishers/base-publisher';
 import { SearchAggregatorService } from '../search/services/search-aggregator.service';
 import { ElasticsearchService } from '../search/services/elasticsearch.service';
+import { AIModule } from '../ai/ai.module';
 
 import { DrugEntity } from '../../database/entities/drug.entity';
 import { DrugContentEntity } from '../../database/entities/drug-content.entity';
@@ -31,6 +32,7 @@ import { ProcessingLogEntity } from '../../database/entities/processing-log.enti
     BullModule.registerQueue({
       name: 'label-processing',
     }),
+    AIModule,
   ],
   controllers: [DrugController],
   providers: [

@@ -1,7 +1,7 @@
-// Use internal Docker network URL for server-side calls, external URL for client-side
+// Use Next.js API routes for all calls (they will proxy to API Gateway)
 const API_BASE_URL = typeof window === 'undefined' 
-  ? 'http://api:3001'  // Server-side: use Docker internal network
-  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'  // Client-side: use external URL
+  ? process.env.NEXT_PUBLIC_BASE_URL || ''  // Server-side: use relative URLs
+  : ''  // Client-side: use relative URLs for Next.js API routes
 
 export interface ApiResponse<T> {
   data: T

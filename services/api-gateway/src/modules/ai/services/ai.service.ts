@@ -192,6 +192,68 @@ export class AIService {
       .trim();
   }
 
+  async compareDrugs(drugs: any[]): Promise<any> {
+    try {
+      const drugNames = drugs.map(d => d.drugName).join(', ');
+      const prompt = `Compare the following FDA-approved drugs for healthcare providers: ${drugNames}
+
+Analyze these drugs and provide:
+1. Overall recommendation based on efficacy and safety
+2. Key differences between the drugs
+3. Effectiveness comparison with scores (0-100)
+4. Safety profile comparison (risk levels: low, medium, high)
+5. Cost-effectiveness analysis
+6. Patient preference considerations
+
+Focus on FDA-approved information only. Do not provide treatment recommendations.
+
+Format the response as JSON with the following structure:
+{
+  "overallRecommendation": "string",
+  "keyDifferences": ["string"],
+  "effectivenessComparison": [{"drug": "string", "score": number, "reasoning": "string"}],
+  "safetyProfile": [{"drug": "string", "riskLevel": "low|medium|high", "keyRisks": ["string"]}],
+  "costEffectiveness": [{"drug": "string", "costTier": "low|medium|high", "valueRating": number}],
+  "patientPreferences": [{"bestFor": "string", "drugs": ["string"], "reasoning": "string"}]
+}`;
+
+      const response = await this.callOpenAI(prompt, 1500);
+      
+      try {
+        return JSON.parse(response);
+      } catch (parseError) {
+        this.logger.warn('Failed to parse AI comparison response as JSON');
+        return this.generateFallbackComparison(drugs);
+      }
+    } catch (error) {
+      this.logger.error('Failed to generate drug comparison:', error);
+      return this.generateFallbackComparison(drugs);
+    }
+  }
+
+  private generateFallbackComparison(drugs: any[]): any {
+    return {
+      overallRecommendation: 'AI analysis unavailable. Please consult the detailed drug information below for comparison.',
+      keyDifferences: drugs.map(d => `${d.drugName}: ${d.label?.indicationsAndUsage?.substring(0, 100) || 'See full prescribing information'}`),
+      effectivenessComparison: drugs.map(d => ({
+        drug: d.drugName,
+        score: 0,
+        reasoning: 'Effectiveness data requires AI analysis'
+      })),
+      safetyProfile: drugs.map(d => ({
+        drug: d.drugName,
+        riskLevel: 'medium' as const,
+        keyRisks: ['See warnings and precautions in prescribing information']
+      })),
+      costEffectiveness: drugs.map(d => ({
+        drug: d.drugName,
+        costTier: 'medium' as const,
+        valueRating: 0
+      })),
+      patientPreferences: []
+    };
+  }
+
   private parseFAQs(response: string): FAQ[] {
     const faqs: FAQ[] = [];
     const lines = response.split('\n').filter(line => line.trim());

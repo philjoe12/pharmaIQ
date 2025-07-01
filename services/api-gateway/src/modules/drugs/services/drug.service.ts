@@ -59,24 +59,11 @@ export class DrugService {
 
   private loadDrugData() {
     try {
-      // Try multiple possible locations for Labels.json
-      const possiblePaths = [
-        path.join(__dirname, '../../../../Labels.json'),
-        path.join(process.cwd(), 'Labels.json'),
-        '/app/Labels.json',
-        path.join(__dirname, '../../../Labels.json'),
-      ];
+      // Use the single Labels.json file location
+      const labelsPath = '/app/data/Labels.json';
       
-      let labelsPath = '';
-      for (const tryPath of possiblePaths) {
-        if (fs.existsSync(tryPath)) {
-          labelsPath = tryPath;
-          break;
-        }
-      }
-      
-      if (!labelsPath) {
-        console.warn('Labels.json not found in any expected location');
+      if (!fs.existsSync(labelsPath)) {
+        console.warn(`Labels.json not found at ${labelsPath}`);
         this.drugs = [];
         return;
       }
@@ -423,24 +410,11 @@ export class DrugService {
 
   async importLabelsFromFile(): Promise<void> {
     try {
-      // Use the same path resolution logic
-      const possiblePaths = [
-        path.join(__dirname, '../../../../Labels.json'),
-        path.join(process.cwd(), 'Labels.json'),
-        '/app/Labels.json',
-        path.join(__dirname, '../../../Labels.json'),
-      ];
+      // Use the single Labels.json file location
+      const labelsPath = '/app/data/Labels.json';
       
-      let labelsPath = '';
-      for (const tryPath of possiblePaths) {
-        if (fs.existsSync(tryPath)) {
-          labelsPath = tryPath;
-          break;
-        }
-      }
-      
-      if (!labelsPath) {
-        throw new Error('Labels.json not found in any expected location');
+      if (!fs.existsSync(labelsPath)) {
+        throw new Error(`Labels.json not found at ${labelsPath}`);
       }
       
       const data = fs.readFileSync(labelsPath, 'utf8');

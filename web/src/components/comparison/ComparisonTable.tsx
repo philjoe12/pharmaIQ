@@ -1,4 +1,4 @@
-interface DrugComparison {
+export interface DrugComparison {
   id: string
   name: string
   genericName?: string
@@ -9,7 +9,7 @@ interface DrugComparison {
   dosageForm: string
 }
 
-interface ComparisonTableProps {
+export interface ComparisonTableProps {
   drugs: DrugComparison[]
 }
 

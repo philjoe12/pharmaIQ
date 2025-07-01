@@ -1,8 +1,11 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import { Metadata } from 'next';
 import { SmartDrugDiscovery } from '@/components/discovery/SmartDrugDiscovery';
+
+export const metadata: Metadata = {
+  title: 'Smart Drug Discovery - Find Medications by Condition | PharmaIQ',
+  description: 'Discover medications using AI-powered search. Find drugs by medical conditions, symptoms, or treatment goals with personalized insights.',
+  keywords: 'drug discovery, medication finder, drug search, medical conditions, AI drug recommendations',
+};
 
 export default function DrugDiscoveryPage() {
   return (

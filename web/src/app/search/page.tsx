@@ -18,8 +18,19 @@ interface SearchPageProps {
 
 async function getSearchResults(query: string, page: number) {
   try {
-    const apiUrl = typeof window === 'undefined' ? 'http://api:3001' : 'http://localhost:3001';
-    const response = await fetch(`${apiUrl}/drugs?search=${encodeURIComponent(query)}&page=${page}&limit=12`);
+    // Use internal API route that proxies to API Gateway
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+    const url = `${baseUrl}/api/drugs?search=${encodeURIComponent(query)}&page=${page}&limit=12`;
+    
+    const response = await fetch(url, {
+      cache: 'no-store'
+    });
+    
+    if (!response.ok) {
+      console.error('Search API error:', response.status, response.statusText);
+      return null;
+    }
+    
     const data = await response.json();
     return data.success ? data : null;
   } catch (error) {

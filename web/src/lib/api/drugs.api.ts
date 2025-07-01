@@ -85,12 +85,12 @@ export class DrugsApi {
       }
     })
     
-    const endpoint = `/drugs${params.toString() ? `?${params.toString()}` : ''}`
+    const endpoint = `/api/drugs${params.toString() ? `?${params.toString()}` : ''}`
     return apiClient.get<DrugListResponse>(endpoint)
   }
 
   static async getDrugBySlug(slug: string): Promise<ApiResponse<DrugLabel>> {
-    return apiClient.get<DrugLabel>(`/drugs/${slug}`)
+    return apiClient.get<DrugLabel>(`/api/drugs/${slug}`)
   }
 
   static async getDrugById(id: string): Promise<ApiResponse<Drug>> {
