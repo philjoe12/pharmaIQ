@@ -260,7 +260,7 @@ export function SmartDrugDiscovery() {
           </div>
 
           <div className="space-y-4">
-            {searchResults.drugs.map((drug) => (
+            {searchResults.drugs && searchResults.drugs.length > 0 ? searchResults.drugs.map((drug) => (
               <div key={drug.setId} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -311,7 +311,9 @@ export function SmartDrugDiscovery() {
                   </Link>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-gray-500 text-center py-8">No drugs found. Try a different search query.</p>
+            )}
           </div>
 
           {searchResults.suggestions && searchResults.suggestions.length > 0 && (

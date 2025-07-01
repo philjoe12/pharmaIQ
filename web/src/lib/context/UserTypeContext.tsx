@@ -33,7 +33,11 @@ export function UserTypeProvider({ children }: UserTypeProviderProps) {
 
   // Initialize user type from various sources
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    // Always initialize on client side
+    if (typeof window === 'undefined') {
+      setIsInitialized(true);
+      return;
+    }
 
     // 1. Check URL parameter first (highest priority)
     const urlUserType = searchParams.get('userType') as UserType;
@@ -44,18 +48,22 @@ export function UserTypeProvider({ children }: UserTypeProviderProps) {
     }
 
     // 2. Check localStorage for saved preference
-    const savedUserType = localStorage.getItem(USER_TYPE_STORAGE_KEY) as UserType;
-    const preferenceSet = localStorage.getItem(USER_PREFERENCE_SET_KEY) === 'true';
-    
-    if (savedUserType && ['patient', 'provider', 'general'].includes(savedUserType)) {
-      setUserTypeState(savedUserType);
-      setHasSetPreference(preferenceSet);
-    } else {
-      // 3. First-time user - show selector after a brief delay
-      setHasSetPreference(false);
-      setTimeout(() => {
-        setShowUserTypeSelector(true);
-      }, 2000);
+    try {
+      const savedUserType = localStorage.getItem(USER_TYPE_STORAGE_KEY) as UserType;
+      const preferenceSet = localStorage.getItem(USER_PREFERENCE_SET_KEY) === 'true';
+      
+      if (savedUserType && ['patient', 'provider', 'general'].includes(savedUserType)) {
+        setUserTypeState(savedUserType);
+        setHasSetPreference(preferenceSet);
+      } else {
+        // 3. First-time user - show selector after a brief delay
+        setHasSetPreference(false);
+        setTimeout(() => {
+          setShowUserTypeSelector(true);
+        }, 2000);
+      }
+    } catch (e) {
+      console.error('Error accessing localStorage:', e);
     }
     
     setIsInitialized(true);

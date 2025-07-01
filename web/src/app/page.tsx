@@ -3,7 +3,9 @@ import Link from 'next/link';
 async function getPopularDrugs() {
   try {
     const apiUrl = typeof window === 'undefined' ? 'http://api:3001' : 'http://localhost:3001';
-    const response = await fetch(`${apiUrl}/drugs?limit=6`);
+    const response = await fetch(`${apiUrl}/drugs?limit=6`, {
+      cache: 'no-store'
+    });
     const data = await response.json();
     return data.success && data.data ? data.data : [];
   } catch (error) {
