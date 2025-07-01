@@ -1,16 +1,16 @@
-export interface DrugComparison {
-  id: string
-  name: string
-  genericName?: string
-  manufacturer: string
-  drugClass: string
-  indications: string[]
-  commonSideEffects: string[]
-  dosageForm: string
+export interface DrugForComparison {
+  setId: string;
+  drugName: string;
+  genericName?: string;
+  manufacturer?: string;
+  labeler?: string;
+  slug: string;
+  label: any;
+  aiContent?: any;
 }
 
 export interface ComparisonTableProps {
-  drugs: DrugComparison[]
+  drugs: DrugForComparison[]
 }
 
 export function ComparisonTable({ drugs }: ComparisonTableProps) {
@@ -23,29 +23,59 @@ export function ComparisonTable({ drugs }: ComparisonTableProps) {
   }
 
   const comparisonFields = [
-    { key: 'name', label: 'Brand Name' },
+    { key: 'drugName', label: 'Brand Name' },
     { key: 'genericName', label: 'Generic Name' },
     { key: 'manufacturer', label: 'Manufacturer' },
     { key: 'drugClass', label: 'Drug Class' },
     { key: 'dosageForm', label: 'Dosage Form' },
     { key: 'indications', label: 'Indications' },
-    { key: 'commonSideEffects', label: 'Common Side Effects' },
+    { key: 'contraindications', label: 'Contraindications' },
+    { key: 'warnings', label: 'Warnings' },
   ]
 
-  const renderCellValue = (drug: DrugComparison, field: any) => {
-    const value = drug[field.key as keyof DrugComparison]
-    
-    if (Array.isArray(value)) {
-      return (
-        <ul className="list-disc list-inside text-sm">
-          {value.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ul>
-      )
+  const renderCellValue = (drug: DrugForComparison, field: any) => {
+    if (field.key === 'drugName') {
+      return drug.drugName || 'N/A';
+    }
+    if (field.key === 'genericName') {
+      return drug.genericName || drug.label?.genericName || 'N/A';
+    }
+    if (field.key === 'manufacturer') {
+      return drug.manufacturer || drug.labeler || 'N/A';
+    }
+    if (field.key === 'drugClass') {
+      return drug.label?.pharmacologicClass || 'N/A';
+    }
+    if (field.key === 'dosageForm') {
+      return drug.label?.dosageFormsAndStrengths || 'N/A';
+    }
+    if (field.key === 'indications') {
+      const indications = drug.label?.indicationsAndUsage;
+      if (indications) {
+        // Strip HTML and truncate
+        const text = indications.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        return text.length > 200 ? text.substring(0, 200) + '...' : text;
+      }
+      return 'N/A';
+    }
+    if (field.key === 'contraindications') {
+      const contraindications = drug.label?.contraindications;
+      if (contraindications) {
+        const text = contraindications.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        return text.length > 200 ? text.substring(0, 200) + '...' : text;
+      }
+      return 'N/A';
+    }
+    if (field.key === 'warnings') {
+      const warnings = drug.label?.warningsAndPrecautions;
+      if (warnings) {
+        const text = warnings.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        return text.length > 200 ? text.substring(0, 200) + '...' : text;
+      }
+      return 'N/A';
     }
     
-    return value || 'N/A'
+    return 'N/A';
   }
 
   return (
@@ -57,8 +87,8 @@ export function ComparisonTable({ drugs }: ComparisonTableProps) {
               Comparison
             </th>
             {drugs.map((drug) => (
-              <th key={drug.id} className="border border-gray-300 px-4 py-2 bg-gray-100 text-left">
-                {drug.name}
+              <th key={drug.setId} className="border border-gray-300 px-4 py-2 bg-gray-100 text-left">
+                {drug.drugName}
               </th>
             ))}
           </tr>
@@ -70,7 +100,7 @@ export function ComparisonTable({ drugs }: ComparisonTableProps) {
                 {field.label}
               </td>
               {drugs.map((drug) => (
-                <td key={`${drug.id}-${field.key}`} className="border border-gray-300 px-4 py-2 align-top">
+                <td key={`${drug.setId}-${field.key}`} className="border border-gray-300 px-4 py-2 align-top">
                   {renderCellValue(drug, field)}
                 </td>
               ))}

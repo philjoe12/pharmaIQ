@@ -11,11 +11,14 @@ import { DrugEventsPublisher } from '../events/publishers/drug-events.publisher'
 import { BasePublisher } from '../events/publishers/base-publisher';
 import { SearchAggregatorService } from '../search/services/search-aggregator.service';
 import { ElasticsearchService } from '../search/services/elasticsearch.service';
+import { EmbeddingService } from '../ai/services/embedding.service';
+import { DrugEmbeddingRepository } from '../../database/repositories/drug-embedding.repository';
 
 import { DrugEntity } from '../../database/entities/drug.entity';
 import { DrugContentEntity } from '../../database/entities/drug-content.entity';
 import { SEOMetadataEntity } from '../../database/entities/seo-metadata.entity';
 import { ProcessingLogEntity } from '../../database/entities/processing-log.entity';
+import { DrugEmbeddingEntity } from '../../database/entities/drug-embedding.entity';
 import { AIModule } from '../ai/ai.module';
 
 @Module({
@@ -25,6 +28,7 @@ import { AIModule } from '../ai/ai.module';
       DrugContentEntity,
       SEOMetadataEntity,
       ProcessingLogEntity,
+      DrugEmbeddingEntity,
     ]),
     BullModule.registerQueue({
       name: 'ai-enhancement',
@@ -39,11 +43,13 @@ import { AIModule } from '../ai/ai.module';
     DrugService, 
     DrugCacheService, 
     DrugRepository, 
+    DrugEmbeddingRepository,
     AICacheService,
     DrugEventsPublisher,
     BasePublisher,
     SearchAggregatorService,
-    ElasticsearchService
+    ElasticsearchService,
+    EmbeddingService
   ],
   exports: [DrugService, DrugRepository, AICacheService],
 })

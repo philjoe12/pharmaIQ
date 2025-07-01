@@ -3,6 +3,7 @@
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+CREATE EXTENSION IF NOT EXISTS "vector";
 
 -- Create enum types
 CREATE TYPE drug_status AS ENUM ('pending', 'processing', 'processed', 'published', 'archived');
@@ -71,6 +72,19 @@ CREATE TABLE IF NOT EXISTS cache_entries (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Drug embeddings table for semantic search
+CREATE TABLE IF NOT EXISTS drug_embeddings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    drug_id UUID NOT NULL REFERENCES drugs(id) ON DELETE CASCADE,
+    content_type VARCHAR(50) NOT NULL, -- 'summary', 'indications', 'full_label'
+    content_text TEXT NOT NULL,
+    embedding vector(1536), -- OpenAI text-embedding-3-small dimensions
+    model_name VARCHAR(100) NOT NULL DEFAULT 'text-embedding-3-small',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(drug_id, content_type)
+);
+
 -- Create indexes
 CREATE INDEX idx_drugs_slug ON drugs(slug);
 CREATE INDEX idx_drugs_status ON drugs(status);
@@ -88,6 +102,12 @@ CREATE INDEX idx_processing_logs_status ON processing_logs(status);
 
 CREATE INDEX idx_cache_expires ON cache_entries(expires_at);
 
+-- Indexes for drug embeddings
+CREATE INDEX idx_drug_embeddings_drug_id ON drug_embeddings(drug_id);
+CREATE INDEX idx_drug_embeddings_content_type ON drug_embeddings(content_type);
+-- Vector similarity search index using HNSW (Hierarchical Navigable Small World)
+CREATE INDEX idx_drug_embeddings_vector ON drug_embeddings USING hnsw (embedding vector_cosine_ops);
+
 -- Create update trigger for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -104,4 +124,7 @@ CREATE TRIGGER update_ai_content_updated_at BEFORE UPDATE ON ai_enhanced_content
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_seo_metadata_updated_at BEFORE UPDATE ON seo_metadata
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_drug_embeddings_updated_at BEFORE UPDATE ON drug_embeddings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

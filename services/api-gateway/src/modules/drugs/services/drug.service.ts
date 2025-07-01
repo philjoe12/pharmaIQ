@@ -11,6 +11,7 @@ import { SearchAggregatorService } from '../../search/services/search-aggregator
 import { ElasticsearchService } from '../../search/services/elasticsearch.service';
 import { DrugEventsPublisher } from '../../events/publishers/drug-events.publisher';
 import { AICacheService } from '../../../common/services/ai-cache.service';
+import { EmbeddingService } from '../../ai/services/embedding.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -50,6 +51,7 @@ export class DrugService {
     private readonly elasticsearchService: ElasticsearchService,
     private readonly drugEventsPublisher: DrugEventsPublisher,
     private readonly aiCacheService: AICacheService,
+    private readonly embeddingService: EmbeddingService,
     @InjectQueue('ai-enhancement') private aiQueue: Queue,
     @InjectQueue('label-processing') private processingQueue: Queue,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -250,6 +252,25 @@ export class DrugService {
     }
 
     try {
+      // Try semantic search first for natural language queries
+      if (searchTerm.split(' ').length > 1) {
+        try {
+          const semanticResults = await this.embeddingService.semanticSearch(searchTerm, {
+            contentType: 'summary',
+            limit: 20,
+            threshold: 0.25
+          });
+          
+          if (semanticResults.length > 0) {
+            const results = semanticResults.map(result => this.entityToLabel(result.drug));
+            await this.cacheManager.set(cacheKey, results, 300);
+            return results;
+          }
+        } catch (error) {
+          console.error('Semantic search failed, continuing with other methods:', error);
+        }
+      }
+
       // Use Elasticsearch for better search
       const esResults = await this.searchAggregator.performHybridSearch(searchTerm, { limit: 20 });
       
@@ -338,6 +359,7 @@ export class DrugService {
       this.aiQueue.add('enhance-content', { drugData, contentType: 'meta-description' }),
       this.aiQueue.add('enhance-content', { drugData, contentType: 'faq' }),
       this.aiQueue.add('enhance-content', { drugData, contentType: 'provider-explanation' }),
+      this.aiQueue.add('generate-embeddings', { drugData }),
     ]);
   }
 

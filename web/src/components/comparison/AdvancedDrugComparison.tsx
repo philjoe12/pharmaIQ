@@ -155,43 +155,72 @@ export function AdvancedDrugComparison() {
     setIsSearching(true);
     console.log('Starting drug search...');
     try {
-      let endpoint = `/api/drugs?search=${encodeURIComponent(query)}&limit=10`;
+      let endpoint = `/api/drugs/search?q=${encodeURIComponent(query)}&limit=10`;
+      console.log('Fetching from endpoint:', endpoint);
       
       // Use AI-powered search if enabled and query looks like natural language
       if (aiSearchEnabled && query.split(' ').length > 2) {
-        const response = await fetch('/api/drugs/discovery/smart-search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: query,
-            userType: userType,
-            limit: 10
-          })
-        });
-        
-        if (response.ok) {
-          const smartData = await response.json();
-          if (smartData.drugs && smartData.drugs.length > 0) {
-            setSearchResults(smartData.drugs);
-            return;
+        console.log('Attempting AI-powered search...');
+        try {
+          const response = await fetch('/api/drugs/discovery/smart-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: query,
+              userType: userType,
+              limit: 10
+            })
+          });
+          
+          console.log('AI search response:', response.status);
+          if (response.ok) {
+            const smartData = await response.json();
+            console.log('AI search data:', smartData);
+            if (smartData.drugs && smartData.drugs.length > 0) {
+              setSearchResults(smartData.drugs);
+              return;
+            }
           }
+        } catch (aiError) {
+          console.log('AI search failed, falling back to regular search:', aiError);
         }
       }
       
       // Fallback to regular search
+      console.log('Performing regular search...');
       const response = await fetch(endpoint);
+      console.log('Search response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        url: response.url
+      });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Search data received:', data);
         if (data.success && data.data) {
           setSearchResults(data.data);
+          console.log('Set search results:', data.data.length, 'drugs');
         } else if (Array.isArray(data)) {
           setSearchResults(data);
+          console.log('Set search results (array):', data.length, 'drugs');
         } else {
+          console.warn('Unexpected data format:', data);
           setSearchResults([]);
         }
+      } else {
+        console.error('Search request failed with status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        setSearchResults([]);
       }
     } catch (error) {
-      console.error('Search failed:', error);
+      console.error('Search failed with error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -294,6 +323,8 @@ export function AdvancedDrugComparison() {
     const debounce = setTimeout(() => {
       if (searchQuery) {
         searchDrugs(searchQuery);
+      } else {
+        setSearchResults([]);
       }
     }, 300);
 
@@ -332,7 +363,7 @@ export function AdvancedDrugComparison() {
         <h3 className="text-lg font-semibold mb-4">Select Drugs to Compare</h3>
         
         {/* Search Bar with AI Toggle */}
-        <div className="space-y-2 mb-6">
+        <div className="relative space-y-2 mb-6">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700">Search for drugs</label>
             <div className="flex items-center gap-2">
@@ -365,32 +396,42 @@ export function AdvancedDrugComparison() {
               }
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            
+            {isSearching && (
+              <div className="absolute right-3 top-3">
+                <LoadingSpinner size="sm" />
+              </div>
+            )}
+            
+            {/* Debug info */}
+            {searchQuery && (
+              <div className="absolute -bottom-6 left-0 text-xs text-gray-500">
+                Results: {searchResults.length} | Query: "{searchQuery}"
+              </div>
+            )}
+            
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg mt-1 max-h-60 overflow-y-auto z-50 shadow-lg">
+                {searchResults.map((drug) => {
+                  console.log('Rendering drug in dropdown:', drug.drugName);
+                  return (
+                    <button
+                      key={drug.setId}
+                      onClick={() => addDrugToComparison(drug)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 block"
+                    >
+                      <div className="font-medium">{drug.drugName}</div>
+                      {drug.genericName && (
+                        <div className="text-sm text-gray-600">Generic: {drug.genericName}</div>
+                      )}
+                      <div className="text-xs text-gray-500">{drug.manufacturer || drug.labeler}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg mt-1 max-h-60 overflow-y-auto z-10 shadow-lg">
-              {searchResults.map((drug) => (
-                <button
-                  key={drug.setId}
-                  onClick={() => addDrugToComparison(drug)}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                >
-                  <div className="font-medium">{drug.drugName}</div>
-                  {drug.genericName && (
-                    <div className="text-sm text-gray-600">Generic: {drug.genericName}</div>
-                  )}
-                  <div className="text-xs text-gray-500">{drug.manufacturer}</div>
-                </button>
-              ))}
-            </div>
-          )}
-          
-          {isSearching && (
-            <div className="absolute right-3 top-3">
-              <LoadingSpinner size="sm" />
-            </div>
-          )}
         </div>
 
         {/* Selected Drugs */}

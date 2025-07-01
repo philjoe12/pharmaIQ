@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database with pgvector
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     ports:
       - "5432:5432"
     environment:
@@ -77,6 +77,8 @@ services:
     volumes:
       # Mount the entire project so shared types work
       - .:/app
+      # Mount data directory for Labels.json
+      - ./data:/app/data
       # Named volumes for dependencies
       - api-node-modules:/app/services/api-gateway/node_modules
     command: sh -c "npm install && npx ts-node -r tsconfig-paths/register src/main.ts"
@@ -96,7 +98,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://api:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3001
     depends_on:
       - api
     volumes:

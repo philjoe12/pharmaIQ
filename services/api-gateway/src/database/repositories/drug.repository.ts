@@ -42,9 +42,10 @@ export class DrugRepository {
     return this.repository.createQueryBuilder('drug')
       .leftJoinAndSelect('drug.aiContent', 'aiContent')
       .leftJoinAndSelect('drug.seoMetadata', 'seoMetadata')
-      .where('drug.drugName ILIKE :searchTerm OR drug.genericName ILIKE :searchTerm', {
+      .where('(drug.drug_name ILIKE :searchTerm OR drug.generic_name ILIKE :searchTerm OR drug.label_data::text ILIKE :searchTerm)', {
         searchTerm: `%${searchTerm}%`
       })
+      .andWhere('drug.status = :status', { status: 'published' })
       .limit(limit)
       .getMany();
   }

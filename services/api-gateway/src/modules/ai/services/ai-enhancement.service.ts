@@ -4,6 +4,7 @@ import { Job } from 'bull';
 import { AICacheService } from '../../../common/services/ai-cache.service';
 import { DrugEventsPublisher } from '../../events/publishers/drug-events.publisher';
 import { ContentEnhancementProcessor } from './content-enhancement.processor';
+import { EmbeddingService } from './embedding.service';
 
 export interface AIEnhancementJob {
   drugData: any;
@@ -21,6 +22,7 @@ export class AIEnhancementService {
     private readonly contentProcessor: ContentEnhancementProcessor,
     private readonly aiCacheService: AICacheService,
     private readonly drugEventsPublisher: DrugEventsPublisher,
+    private readonly embeddingService: EmbeddingService,
   ) {}
 
   @Process('enhance-content')
@@ -191,6 +193,45 @@ export class AIEnhancementService {
       this.logger.log(`Invalidated AI cache for drug: ${drugId}`);
     } catch (error) {
       this.logger.error(`Failed to invalidate cache for ${drugId}:`, error);
+      throw error;
+    }
+  }
+
+  @Process('generate-embeddings')
+  async processEmbeddingGeneration(job: Job<{ drugData: any }>): Promise<any> {
+    const { drugData } = job.data;
+    const drugId = drugData.setId || drugData.id;
+
+    this.logger.log(`Generating embeddings for drug ${drugId}`);
+
+    try {
+      // Emit processing started event
+      await this.drugEventsPublisher.publishProcessingStarted(drugId);
+
+      // Generate embeddings using the embedding service
+      const embeddings = await this.embeddingService.generateDrugEmbeddings(drugData);
+
+      this.logger.log(`Successfully generated ${embeddings.length} embeddings for drug ${drugId}`);
+
+      // Emit completion event
+      await this.drugEventsPublisher.publishProcessingCompleted(drugId, {
+        type: 'embedding-generation',
+        embeddingsCount: embeddings.length,
+        success: true,
+      });
+
+      return {
+        success: true,
+        drugId,
+        embeddingsGenerated: embeddings.length,
+        completedAt: new Date(),
+      };
+    } catch (error) {
+      this.logger.error(`Failed to generate embeddings for drug ${drugId}:`, error);
+
+      // Emit error event
+      await this.drugEventsPublisher.publishProcessingStarted(drugId);
+
       throw error;
     }
   }

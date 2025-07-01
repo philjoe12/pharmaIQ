@@ -32,13 +32,34 @@ export class DrugController {
     private readonly aiService: AIService,
   ) {}
 
+  @Get('search')
+  @ApiOperation({ summary: 'Search drugs by name, generic name, or manufacturer' })
+  @ApiQuery({ name: 'q', description: 'Search query', required: true })
+  @ApiResponse({ status: 200, description: 'Return search results' })
+  async searchDrugs(@Query('q') searchTerm: string) {
+    console.log('Search endpoint called with term:', searchTerm);
+    if (!searchTerm || searchTerm.trim().length < 2) {
+      return { success: true, data: [] };
+    }
+    const results = await this.drugService.searchDrugs(searchTerm.trim());
+    console.log(`Found ${results.length} results for search term: ${searchTerm}`);
+    return { success: true, data: results };
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all drugs with pagination' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Return all drugs' })
-  async findAll(@Query() query: DrugQueryDto) {
+  async findAll(@Query() query: DrugQueryDto & { search?: string }) {
+    // Handle search parameter if provided
+    if (query.search) {
+      console.log('Search via query param:', query.search);
+      const results = await this.drugService.searchDrugs(query.search);
+      return { success: true, data: results };
+    }
     return this.drugService.findAll(query);
   }
 
@@ -74,17 +95,6 @@ export class DrugController {
     @Query() query: DrugQueryDto,
   ) {
     return this.drugService.findByCondition(condition, query);
-  }
-
-  @Get('search')
-  @ApiOperation({ summary: 'Search drugs by name, generic name, or manufacturer' })
-  @ApiQuery({ name: 'q', description: 'Search query', required: true })
-  @ApiResponse({ status: 200, description: 'Return search results' })
-  async searchDrugs(@Query('q') searchTerm: string) {
-    if (!searchTerm || searchTerm.trim().length < 2) {
-      throw new NotFoundException('Search term must be at least 2 characters');
-    }
-    return this.drugService.searchDrugs(searchTerm.trim());
   }
 
   @Get('compare/:slugs')
