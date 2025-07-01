@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { AIService } from './services/ai.service';
@@ -16,7 +16,7 @@ import { AICacheService } from '../../common/services/ai-cache.service';
     BullModule.registerQueue({
       name: 'ai-enhancement',
     }),
-    DrugsModule,
+    forwardRef(() => DrugsModule),
     EventsModule
   ],
   controllers: [AIController],

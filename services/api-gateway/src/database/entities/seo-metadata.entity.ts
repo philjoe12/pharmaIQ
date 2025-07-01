@@ -12,16 +12,16 @@ export class SEOMetadataEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   title?: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true, name: 'meta_description' })
   metaDescription?: string;
 
   @Column({ type: 'jsonb', nullable: true })
   keywords?: string[];
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  slug?: string;
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'canonical_url' })
+  canonicalUrl?: string;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'jsonb', nullable: true, name: 'structured_data' })
   structuredData?: Record<string, any>;
 
   @CreateDateColumn({ name: 'created_at' })

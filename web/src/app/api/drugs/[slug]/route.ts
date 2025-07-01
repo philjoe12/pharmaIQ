@@ -14,7 +14,7 @@ export async function GET(
     
     // Call API Gateway to get drug by slug with enhanced content
     const response = await fetch(
-      `${API_GATEWAY_URL}/drugs/slug/${slug}/enhanced?userType=${userType}&includeAI=${includeAI}`,
+      `${API_GATEWAY_URL}/drugs/enhanced/${slug}?userType=${userType}&includeAI=${includeAI}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -33,7 +33,7 @@ export async function GET(
       
       // Try fallback to basic endpoint without enhancement
       const fallbackResponse = await fetch(
-        `${API_GATEWAY_URL}/drugs/slug/${slug}`,
+        `${API_GATEWAY_URL}/drugs/${slug}`,
         {
           headers: {
             'Content-Type': 'application/json',
