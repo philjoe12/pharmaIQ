@@ -103,9 +103,11 @@ export class DrugComparisonService {
     try {
       // Check cache first
       const cacheKey = this.generateCacheKey(drugs, scenario, categories);
-      const cached = await this.aiCacheService.getSearchResults(cacheKey);
+      const cached = await this.aiCacheService.getComparisonResult(cacheKey);
       if (cached) {
         this.logger.debug('Returning cached comparison result');
+        // Track this as a popular comparison
+        await this.aiCacheService.trackPopularComparison(cacheKey);
         return cached as ComparisonResult;
       }
 
@@ -130,7 +132,9 @@ export class DrugComparisonService {
       };
 
       // Cache the result
-      await this.aiCacheService.cacheSearchResults(cacheKey, result);
+      await this.aiCacheService.cacheComparisonResult(cacheKey, result);
+      // Track this as a popular comparison
+      await this.aiCacheService.trackPopularComparison(cacheKey);
 
       this.logger.log(`AI comparison completed in ${result.metadata.processingTime}ms`);
       return result;

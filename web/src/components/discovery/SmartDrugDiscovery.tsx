@@ -84,7 +84,8 @@ export function SmartDrugDiscovery() {
           query: data.query || query,
           totalFound: data.totalFound || 0,
           drugs: data.drugs || [],
-          suggestedQueries: data.suggestedQueries || []
+          suggestedQueries: data.suggestedQueries || [],
+          searchIntent: data.searchIntent || null
         };
         setSearchResults(validatedData);
         setConditionResults(null);
@@ -291,6 +292,27 @@ export function SmartDrugDiscovery() {
               <p className="text-gray-600">
                 Found {searchResults.totalFound} medications for "{searchResults.query}"
               </p>
+              
+              {/* AI Intent Display */}
+              {searchResults.searchIntent && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900 mb-2">AI Understanding:</p>
+                  <div className="text-sm text-blue-800 space-y-1">
+                    {searchResults.searchIntent.category && (
+                      <p>• Category: <span className="font-medium">{searchResults.searchIntent.category}</span></p>
+                    )}
+                    {searchResults.searchIntent.condition && (
+                      <p>• Condition: <span className="font-medium">{searchResults.searchIntent.condition}</span></p>
+                    )}
+                    {searchResults.searchIntent.drugName && (
+                      <p>• Drug Name: <span className="font-medium">{searchResults.searchIntent.drugName}</span></p>
+                    )}
+                    {searchResults.searchIntent.manufacturer && (
+                      <p>• Manufacturer: <span className="font-medium">{searchResults.searchIntent.manufacturer}</span></p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -324,11 +346,11 @@ export function SmartDrugDiscovery() {
                     )}
                   </div>
                   
-                  {drug.relevanceScore && (
+                  {drug.relevanceScore !== undefined && (
                     <div className="text-right">
                       <div className="text-sm text-gray-500">Relevance</div>
                       <div className="text-lg font-semibold text-green-600">
-                        {Math.round(drug.relevanceScore)}%
+                        {drug.relevanceScore.toFixed(2)}
                       </div>
                     </div>
                   )}

@@ -1,0 +1,16 @@
+#!/bin/bash
+# Docker Compose wrapper that works with both v1 and v2
+# This ensures compatibility across all platforms
+
+# Detect which docker-compose command to use
+if docker compose version >/dev/null 2>&1; then
+    # Docker Compose v2 (new style)
+    docker compose "$@"
+elif command -v docker-compose >/dev/null 2>&1; then
+    # Docker Compose v1 (old style)
+    docker-compose "$@"
+else
+    echo "Error: Docker Compose is not installed"
+    echo "Please install Docker Compose: https://docs.docker.com/compose/install/"
+    exit 1
+fi

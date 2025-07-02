@@ -5,6 +5,7 @@ import { AICacheService } from '../../../common/services/ai-cache.service';
 import { DrugEventsPublisher } from '../../events/publishers/drug-events.publisher';
 import { ContentEnhancementProcessor } from './content-enhancement.processor';
 import { EmbeddingService } from './embedding.service';
+import { DrugRepository } from '../../../database/repositories/drug.repository';
 
 export interface AIEnhancementJob {
   drugData: any;
@@ -23,6 +24,7 @@ export class AIEnhancementService {
     private readonly aiCacheService: AICacheService,
     private readonly drugEventsPublisher: DrugEventsPublisher,
     private readonly embeddingService: EmbeddingService,
+    private readonly drugRepository: DrugRepository,
   ) {}
 
   @Process('enhance-content')
@@ -200,21 +202,28 @@ export class AIEnhancementService {
   @Process('generate-embeddings')
   async processEmbeddingGeneration(job: Job<{ drugData: any }>): Promise<any> {
     const { drugData } = job.data;
-    const drugId = drugData.setId || drugData.id;
+    const drugSetId = drugData.setId || drugData.id;
 
-    this.logger.log(`Generating embeddings for drug ${drugId}`);
+    this.logger.log(`Generating embeddings for drug ${drugSetId}`);
 
     try {
       // Emit processing started event
-      await this.drugEventsPublisher.publishProcessingStarted(drugId);
+      await this.drugEventsPublisher.publishProcessingStarted(drugSetId);
 
-      // Generate embeddings using the embedding service
-      const embeddings = await this.embeddingService.generateDrugEmbeddings(drugData);
+      // We need to fetch the actual DrugEntity from the database to get the real ID
+      const drugEntity = await this.drugRepository.findBySetId(drugSetId);
+      
+      if (!drugEntity) {
+        throw new Error(`Drug entity not found for setId: ${drugSetId}`);
+      }
 
-      this.logger.log(`Successfully generated ${embeddings.length} embeddings for drug ${drugId}`);
+      // Generate embeddings using the actual drug entity with the correct ID
+      const embeddings = await this.embeddingService.generateDrugEmbeddings(drugEntity);
+
+      this.logger.log(`Successfully generated ${embeddings.length} embeddings for drug ${drugSetId}`);
 
       // Emit completion event
-      await this.drugEventsPublisher.publishProcessingCompleted(drugId, {
+      await this.drugEventsPublisher.publishProcessingCompleted(drugSetId, {
         type: 'embedding-generation',
         embeddingsCount: embeddings.length,
         success: true,
@@ -222,15 +231,19 @@ export class AIEnhancementService {
 
       return {
         success: true,
-        drugId,
+        drugId: drugSetId,
         embeddingsGenerated: embeddings.length,
         completedAt: new Date(),
       };
     } catch (error) {
-      this.logger.error(`Failed to generate embeddings for drug ${drugId}:`, error);
+      this.logger.error(`Failed to generate embeddings for drug ${drugSetId}:`, error);
 
       // Emit error event
-      await this.drugEventsPublisher.publishProcessingStarted(drugId);
+      await this.drugEventsPublisher.publishProcessingCompleted(drugSetId, {
+        type: 'embedding-generation',
+        error: error.message,
+        success: false,
+      });
 
       throw error;
     }

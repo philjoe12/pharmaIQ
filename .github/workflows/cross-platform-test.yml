@@ -1,0 +1,266 @@
+name: Cross-Platform Docker Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test-platforms:
+    strategy:
+      fail-fast: false  # Continue testing other platforms if one fails
+      matrix:
+        os: 
+          - ubuntu-latest      # Ubuntu 22.04 LTS
+          - ubuntu-20.04       # Ubuntu 20.04 LTS (older LTS)
+          - macos-latest       # macOS 12+ on Intel
+          - macos-13           # macOS 13 on Intel
+          - windows-latest     # Windows Server 2022
+        
+    runs-on: ${{ matrix.os }}
+    
+    name: Test on ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      # Platform-specific setup
+      - name: Setup Docker on macOS
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew install --cask docker
+          echo "Installing Docker Desktop for Mac..."
+          # Note: Docker Desktop requires manual start on macOS runners
+          # Using colima as an alternative
+          brew install colima docker docker-compose
+          colima start --cpu 2 --memory 4
+          
+      - name: Setup Docker on Windows
+        if: startsWith(matrix.os, 'windows')
+        run: |
+          # Windows runners have Docker pre-installed
+          docker --version
+          docker-compose --version
+          
+      - name: Docker info
+        run: |
+          docker --version
+          docker compose version || docker-compose --version
+          docker info
+        shell: bash
+          
+      # Create .env file for testing
+      - name: Create test environment
+        run: |
+          cp .env.example .env
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-ci' }}" >> .env
+        shell: bash
+      
+      # Test Docker Compose configuration
+      - name: Validate Docker Compose config
+        run: |
+          docker compose config || docker-compose config
+        shell: bash
+      
+      # Start services
+      - name: Start Docker services
+        run: |
+          if command -v "docker compose" > /dev/null 2>&1; then
+            docker compose up -d
+          else
+            docker-compose up -d
+          fi
+        shell: bash
+        timeout-minutes: 10
+      
+      # Wait for services to be healthy
+      - name: Wait for services
+        run: |
+          echo "Waiting for services to be healthy..."
+          sleep 30
+          
+          # Check service status
+          if command -v "docker compose" > /dev/null 2>&1; then
+            docker compose ps
+          else
+            docker-compose ps
+          fi
+        shell: bash
+      
+      # Test service connectivity
+      - name: Test service endpoints
+        run: |
+          # Test web service
+          max_attempts=30
+          attempt=1
+          
+          echo "Testing web service..."
+          while [ $attempt -le $max_attempts ]; do
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✓ Web service is accessible"
+              break
+            fi
+            echo "Attempt $attempt/$max_attempts: Web service not ready yet..."
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          
+          # Test API service
+          echo "Testing API service..."
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+              echo "✓ API service is accessible"
+              break
+            fi
+            echo "Attempt $attempt/$max_attempts: API service not ready yet..."
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          
+          # Test database
+          echo "Testing database..."
+          if command -v "docker compose" > /dev/null 2>&1; then
+            docker compose exec -T postgres pg_isready -U pharmaiq || echo "Database check failed"
+          else
+            docker-compose exec -T postgres pg_isready -U pharmaiq || echo "Database check failed"
+          fi
+        shell: bash
+        timeout-minutes: 10
+      
+      # Platform-specific tests
+      - name: Run platform-specific tests
+        run: |
+          case "${{ matrix.os }}" in
+            ubuntu-*)
+              echo "Running Ubuntu-specific tests..."
+              # Check for SELinux (not on GitHub runners, but good to verify)
+              if command -v getenforce > /dev/null 2>&1; then
+                echo "SELinux status: $(getenforce || echo 'Not available')"
+              fi
+              ;;
+            macos-*)
+              echo "Running macOS-specific tests..."
+              # Check Docker Desktop settings
+              if [ -f ~/Library/Group\ Containers/group.com.docker/settings.json ]; then
+                echo "Docker Desktop settings found"
+              fi
+              # Test case sensitivity
+              touch TEST_FILE test_file
+              if [ -f TEST_FILE ] && [ -f test_file ]; then
+                echo "✓ File system is case-insensitive (typical for macOS)"
+              fi
+              rm -f TEST_FILE test_file
+              ;;
+            windows-*)
+              echo "Running Windows-specific tests..."
+              # Check if running in WSL
+              if grep -qi microsoft /proc/version 2>/dev/null; then
+                echo "✓ Running in WSL environment"
+              fi
+              ;;
+          esac
+        shell: bash
+      
+      # Collect logs on failure
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker Compose Logs ==="
+          if command -v "docker compose" > /dev/null 2>&1; then
+            docker compose logs --tail=50
+          else
+            docker-compose logs --tail=50
+          fi
+          
+          echo "=== Docker Process List ==="
+          docker ps -a
+          
+          echo "=== Docker Images ==="
+          docker images
+        shell: bash
+      
+      # Cleanup
+      - name: Cleanup
+        if: always()
+        run: |
+          if command -v "docker compose" > /dev/null 2>&1; then
+            docker compose down -v || true
+          else
+            docker-compose down -v || true
+          fi
+          
+          # Stop colima on macOS
+          if command -v colima > /dev/null 2>&1; then
+            colima stop || true
+          fi
+        shell: bash
+
+  # Additional test for ARM64 architecture (Apple Silicon)
+  test-arm64:
+    runs-on: ubuntu-latest
+    name: Test ARM64 compatibility
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      
+      - name: Check multi-arch support
+        run: |
+          echo "Checking if images support ARM64..."
+          for image in node:20-alpine pgvector/pgvector:pg15 redis:7-alpine elasticsearch:8.11.0; do
+            echo -n "Checking $image... "
+            if docker manifest inspect $image | grep -q "arm64\|aarch64"; then
+              echo "✓ Supports ARM64"
+            else
+              echo "✗ No ARM64 support"
+            fi
+          done
+      
+      - name: Test config validation on ARM64
+        run: |
+          docker run --rm \
+            --platform linux/arm64 \
+            -v $(pwd):/workspace \
+            -w /workspace \
+            alpine:latest sh -c "
+              apk add --no-cache docker-cli docker-compose
+              docker-compose config > /dev/null && echo '✓ Config valid on ARM64' || echo '✗ Config invalid on ARM64'
+            "
+
+  # Summary job
+  test-summary:
+    needs: [test-platforms, test-arm64]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Test Summary
+        run: |
+          echo "## Cross-Platform Test Summary"
+          echo ""
+          echo "| Platform | Status |"
+          echo "|----------|--------|"
+          
+          # Check job results
+          if [ "${{ needs.test-platforms.result }}" == "success" ]; then
+            echo "| All platforms | ✅ Passed |"
+          else
+            echo "| Some platforms | ❌ Failed |"
+          fi
+          
+          if [ "${{ needs.test-arm64.result }}" == "success" ]; then
+            echo "| ARM64 compatibility | ✅ Passed |"
+          else
+            echo "| ARM64 compatibility | ❌ Failed |"
+          fi

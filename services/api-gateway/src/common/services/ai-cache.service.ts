@@ -42,6 +42,9 @@ export class AICacheService {
     VALIDATION_RESULT: 'validation',
     FAQ_CONTENT: 'faq',
     SEARCH_RESULTS: 'search',
+    COMPARISON_RESULT: 'comparison',
+    COMPARISON_SEO: 'comparison_seo',
+    POPULAR_COMPARISONS: 'popular_comparisons',
   } as const;
 
   // TTL values in seconds for different content types
@@ -53,6 +56,9 @@ export class AICacheService {
     VALIDATION_RESULT: 12 * 60 * 60, // 12 hours - Validation results
     FAQ_CONTENT: 3 * 24 * 60 * 60, // 3 days - FAQ content
     SEARCH_RESULTS: 30 * 60, // 30 minutes - Search results
+    COMPARISON_RESULT: 24 * 60 * 60, // 24 hours - Comparison results
+    COMPARISON_SEO: 7 * 24 * 60 * 60, // 7 days - SEO data for comparisons
+    POPULAR_COMPARISONS: 60 * 60, // 1 hour - Popular comparisons list
   } as const;
 
   constructor(private readonly configService: ConfigService) {
@@ -187,6 +193,58 @@ export class AICacheService {
   async getSearchResults<T = any>(queryHash: string): Promise<T | null> {
     const key = this.buildKey(this.KEY_PREFIXES.SEARCH_RESULTS, queryHash);
     return await this.get<T>(key);
+  }
+
+  /**
+   * Cache drug comparison result
+   */
+  async cacheComparisonResult(comparisonKey: string, result: any): Promise<void> {
+    const key = this.buildKey(this.KEY_PREFIXES.COMPARISON_RESULT, comparisonKey);
+    await this.set(key, result, this.TTL_VALUES.COMPARISON_RESULT);
+    this.logger.debug(`Cached comparison result: ${comparisonKey}`);
+  }
+
+  /**
+   * Get cached comparison result
+   */
+  async getComparisonResult(comparisonKey: string): Promise<any | null> {
+    const key = this.buildKey(this.KEY_PREFIXES.COMPARISON_RESULT, comparisonKey);
+    return await this.get<any>(key);
+  }
+
+  /**
+   * Cache comparison SEO data
+   */
+  async cacheComparisonSEO(comparisonKey: string, seoData: any): Promise<void> {
+    const key = this.buildKey(this.KEY_PREFIXES.COMPARISON_SEO, comparisonKey);
+    await this.set(key, seoData, this.TTL_VALUES.COMPARISON_SEO);
+    this.logger.debug(`Cached comparison SEO data: ${comparisonKey}`);
+  }
+
+  /**
+   * Get cached comparison SEO data
+   */
+  async getComparisonSEO(comparisonKey: string): Promise<any | null> {
+    const key = this.buildKey(this.KEY_PREFIXES.COMPARISON_SEO, comparisonKey);
+    return await this.get<any>(key);
+  }
+
+  /**
+   * Track popular comparisons
+   */
+  async trackPopularComparison(comparisonKey: string): Promise<void> {
+    const key = this.buildKey(this.KEY_PREFIXES.POPULAR_COMPARISONS, 'tracking');
+    await this.redis.zincrby(key, 1, comparisonKey);
+    await this.redis.expire(key, this.TTL_VALUES.POPULAR_COMPARISONS);
+  }
+
+  /**
+   * Get popular comparisons
+   */
+  async getPopularComparisons(limit: number = 10): Promise<string[]> {
+    const key = this.buildKey(this.KEY_PREFIXES.POPULAR_COMPARISONS, 'tracking');
+    const results = await this.redis.zrevrange(key, 0, limit - 1);
+    return results;
   }
 
   /**

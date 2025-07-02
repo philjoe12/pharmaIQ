@@ -20,6 +20,21 @@ A production-ready system that transforms FDA drug label JSON files into SEO-opt
 - **Docker** and **docker-compose**
 - **OpenAI API Key** (required for AI features and semantic search)
 
+### Platform-Specific Notes
+
+**macOS Users:**
+- For better performance, enable VirtioFS in Docker Desktop settings
+- Docker Desktop should have at least 4GB RAM allocated
+
+**Linux Users:**
+- Add your user to the docker group: `sudo usermod -aG docker $USER`
+- If using SELinux (RHEL/Fedora), the setup script handles volume permissions automatically
+
+**Windows Users:**
+- Use WSL2 backend for Docker Desktop
+- Clone the repository inside WSL2 filesystem for better performance
+- Ensure line endings are LF, not CRLF: `git config core.autocrlf false`
+
 ### Setup
 
 1. **Clone the Repository**
@@ -35,21 +50,34 @@ A production-ready system that transforms FDA drug label JSON files into SEO-opt
    echo "OPENAI_API_KEY=your-openai-api-key" >> .env
    ```
 
-3. **Start Everything**
+3. **Start the Application**
+   
+   **Recommended: Using the Setup Script**
    ```bash
-   docker-compose up
+   ./scripts/docker-setup.sh
    ```
    
-   Or use the quick start script:
+   This interactive script will:
+   - Check your system compatibility (Linux/macOS/Windows WSL2)
+   - Start all Docker services
+   - Initialize the database automatically using TypeORM migrations
+   - Import sample drug data
+   - Show you the application URLs
+   
+   **Alternative: Manual Setup**
    ```bash
-   ./quick-start.sh
+   # Start all services
+   docker-compose up -d
+   
+   # The database will be initialized automatically on first run
+   # To import sample drug data:
+   docker exec -it pharmaiq-api-1 node /app/infrastructure/docker/scripts/import-labels.js
    ```
-   That's it! 🎉
 
 4. **Access the Application**
-   - **Main App**: http://localhost:3000
-   - **API**: http://localhost:3001
-   - **Health Check**: http://localhost:3001/health
+   - **Main App**: `http://localhost:3000`
+   - **API**: `http://localhost:3001`
+   - **Health Check**: `http://localhost:3001/health`
 
 ## 🏗️ Architecture Overview
 
@@ -74,6 +102,8 @@ A production-ready system that transforms FDA drug label JSON files into SEO-opt
 - **🤖 AI Worker**: OpenAI integration for content enhancement and embeddings
 - **⚙️ Processing Worker**: FDA label parsing and data extraction
 - **🗄️ PostgreSQL + pgvector**: Vector database for semantic search and drug storage
+  - Database schema managed automatically by TypeORM migrations
+  - No manual SQL scripts needed - migrations run on startup
 - **⚡ Redis**: Caching layer and queue management
 - **🐳 Docker**: Containerized deployment with health checks
 
@@ -413,7 +443,7 @@ export async function generateMetadata({ params }): Promise<Metadata> {
       title: aiMetadata.seoTitle,
       description: aiMetadata.metaDescription,
       type: 'article',
-      url: `https://pharmaiq.com/drugs/${params.slug}`,
+      url: `https://your-domain.com/drugs/${params.slug}`,
     },
     jsonLd: generateDrugSchema(drug),
   };
@@ -606,7 +636,7 @@ npm run test:performance
 - **dosage-calculator**: Calculate dosing information
 - **similarity-search**: Find similar drugs by therapeutic class using vector embeddings
 
-Full API documentation available at: http://localhost:3001/api/docs
+Full API documentation available at: `http://localhost:3001/api/docs` (when running locally)
 
 ## 🔒 Security & Compliance
 

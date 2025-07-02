@@ -97,6 +97,19 @@ export class DrugController {
     return this.drugService.findByCondition(condition, query);
   }
 
+  @Get('compare/cached')
+  @ApiOperation({ summary: 'Get cached drug comparison' })
+  @ApiQuery({ name: 'key', description: 'Comparison cache key (sorted drug slugs)', required: true })
+  @ApiResponse({ status: 200, description: 'Return cached comparison if available' })
+  async getCachedComparison(@Query('key') cacheKey: string) {
+    const result = await this.drugService.getCachedComparison(cacheKey);
+    return {
+      success: !!result,
+      data: result,
+      cached: !!result
+    };
+  }
+
   @Get('compare/:slugs')
   @ApiOperation({ summary: 'Compare multiple drugs' })
   @ApiParam({ name: 'slugs', description: 'Comma-separated drug slugs' })
@@ -338,5 +351,14 @@ export class DrugController {
     @Query('includeAI') includeAI: boolean = true
   ) {
     return this.drugService.findEnhancedBySlug(slug, userType, includeAI);
+  }
+
+  @Post(':id/enhance')
+  @ApiOperation({ summary: 'Trigger AI enhancement for a drug' })
+  @ApiParam({ name: 'id', description: 'Drug set ID' })
+  @ApiResponse({ status: 200, description: 'Enhancement triggered successfully' })
+  async triggerEnhancement(@Param('id') id: string) {
+    await this.drugService.enhanceDrugContent(id);
+    return { success: true, message: `Enhancement triggered for drug ${id}` };
   }
 }

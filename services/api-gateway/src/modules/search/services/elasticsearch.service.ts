@@ -50,6 +50,17 @@ export class ElasticsearchService implements OnModuleInit {
 
       const response = await this.search(query, searchOptions);
       
+      // Check if response has the expected structure
+      if (!response || !response.hits || !response.hits.hits) {
+        this.logger.warn('Elasticsearch response missing expected structure');
+        return {
+          query,
+          total: 0,
+          results: [],
+          facets: { manufacturers: [], categories: [] }
+        };
+      }
+      
       return {
         query,
         total: (response.hits.total as any)?.value || response.hits.total || 0,
@@ -763,17 +774,30 @@ export class ElasticsearchService implements OnModuleInit {
   }
 
   private formatSearchResponse(response: any): any {
+    // Handle both old and new Elasticsearch response formats
+    const responseBody = response.body || response;
+    
+    if (!responseBody || !responseBody.hits) {
+      return {
+        hits: {
+          total: 0,
+          hits: []
+        },
+        aggregations: {}
+      };
+    }
+    
     return {
       hits: {
-        total: (response as any).body.hits.total,
-        hits: (response as any).body.hits.hits.map((hit: any) => ({
+        total: responseBody.hits.total,
+        hits: responseBody.hits.hits.map((hit: any) => ({
           _id: hit._id,
           _score: hit._score,
           _source: hit._source,
           highlight: hit.highlight
         }))
       },
-      aggregations: (response as any).body.aggregations
+      aggregations: responseBody.aggregations || {}
     };
   }
 }

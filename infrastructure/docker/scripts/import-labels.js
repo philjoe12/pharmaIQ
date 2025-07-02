@@ -3,43 +3,33 @@ const { Client } = require('pg');
 
 async function importLabels() {
   const client = new Client({
-    host: 'localhost',
-    port: 5432,
-    user: 'pharmaiq',
-    password: 'pharmaiq_secure_password_2024',
-    database: 'postgres'
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: process.env.DATABASE_PORT || 5432,
+    user: process.env.DATABASE_USER || 'pharmaiq',
+    password: process.env.DATABASE_PASSWORD || 'pharmaiq_dev',
+    database: process.env.DATABASE_NAME || 'pharmaiq_db'
   });
 
   try {
     await client.connect();
     console.log('Connected to database');
 
-    // Read the Labels.json file
-    const labelsData = JSON.parse(fs.readFileSync('/pharmaIQ/data/Labels.json', 'utf8'));
+    // Read the Labels.json file using relative path from the container's working directory
+    const labelsData = JSON.parse(fs.readFileSync('/app/data/Labels.json', 'utf8'));
     console.log(`Found ${labelsData.length} drugs to import`);
 
-    // First ensure all tables exist
-    await client.query(`
-      -- Create the missing drug_content table
-      CREATE TABLE IF NOT EXISTS drug_content (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          drug_id UUID NOT NULL REFERENCES drugs(id) ON DELETE CASCADE,
-          title VARCHAR(255),
-          description TEXT,
-          indications TEXT,
-          contraindications TEXT,
-          dosage TEXT,
-          warnings TEXT,
-          "sideEffects" TEXT,
-          "enhancedContent" JSONB,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE(drug_id)
+    // Check if tables exist (TypeORM should have created them)
+    const tablesExist = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'drugs'
       );
-      
-      -- Create index if not exists
-      CREATE INDEX IF NOT EXISTS idx_drug_content_drug_id ON drug_content(drug_id);
     `);
+    
+    if (!tablesExist.rows[0].exists) {
+      throw new Error('Database tables not found. Please run migrations first.');
+    }
 
     let imported = 0;
     let errors = 0;
@@ -82,7 +72,7 @@ async function importLabels() {
             contraindications, 
             dosage, 
             warnings, 
-            side_effects
+            "sideEffects"
           )
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           ON CONFLICT (drug_id) DO UPDATE
@@ -93,7 +83,7 @@ async function importLabels() {
             contraindications = EXCLUDED.contraindications,
             dosage = EXCLUDED.dosage,
             warnings = EXCLUDED.warnings,
-            side_effects = EXCLUDED.side_effects,
+            "sideEffects" = EXCLUDED."sideEffects",
             updated_at = CURRENT_TIMESTAMP
         `, [
           drugId,

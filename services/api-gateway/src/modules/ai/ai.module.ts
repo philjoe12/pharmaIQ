@@ -12,12 +12,14 @@ import { DrugsModule } from '../drugs/drug.module';
 import { EventsModule } from '../events/events.module';
 import { AICacheService } from '../../common/services/ai-cache.service';
 import { DrugEmbeddingEntity } from '../../database/entities/drug-embedding.entity';
+import { DrugEntity } from '../../database/entities/drug.entity';
 import { DrugEmbeddingRepository } from '../../database/repositories/drug-embedding.repository';
+import { DrugRepository } from '../../database/repositories/drug.repository';
 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([DrugEmbeddingEntity]),
+    TypeOrmModule.forFeature([DrugEmbeddingEntity, DrugEntity]),
     BullModule.registerQueue({
       name: 'ai-enhancement',
     }),
@@ -32,6 +34,7 @@ import { DrugEmbeddingRepository } from '../../database/repositories/drug-embedd
     DrugComparisonService,
     EmbeddingService,
     DrugEmbeddingRepository,
+    DrugRepository,
     AICacheService
   ],
   exports: [AIService, AIEnhancementService, DrugComparisonService, EmbeddingService],

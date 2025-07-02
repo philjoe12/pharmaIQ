@@ -35,9 +35,9 @@ EOF
 
 echo -e "${GREEN}Database dropped and recreated.${NC}"
 
-# Run initialization script
-echo -e "${YELLOW}Running initialization script...${NC}"
-PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME < /pharmaIQ/infrastructure/docker/scripts/init-db.sql
+# Run TypeORM migrations
+echo -e "${YELLOW}Running TypeORM migrations...${NC}"
+cd /pharmaIQ/services/api-gateway && npm run migration:run
 
 echo -e "${GREEN}✅ Database reset completed successfully!${NC}"
-echo -e "${YELLOW}You can now run the seed script: ./infrastructure/docker/scripts/seed-data.sh${NC}"
+echo -e "${YELLOW}You can now import drug data: docker exec -it pharmaiq-api-1 node /app/infrastructure/docker/scripts/import-labels.js${NC}"

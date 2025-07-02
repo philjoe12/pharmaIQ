@@ -9,6 +9,7 @@ import {
   generateProviderExplanationPrompt,
   generateRelatedContentPrompt
 } from '../prompts';
+import { EmbeddingService } from './embedding.service';
 
 export interface EnhancedContent {
   seoTitle: string;
@@ -63,7 +64,10 @@ export class AIService {
   private readonly maxRetries = 3;
   private readonly retryDelay = 1000; // ms
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private embeddingService: EmbeddingService
+  ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.logger.log(`OpenAI API Key configured: ${apiKey ? 'Yes' : 'No'}`);
     
@@ -95,6 +99,9 @@ export class AIService {
         this.generateRelatedContent(enrichedDrug),
         this.generateUserSpecificContent(enrichedDrug)
       ]);
+
+      // Embeddings will be generated through the queue processor
+      // which will fetch the proper DrugEntity with the correct ID
 
       return {
         seoTitle,
@@ -174,7 +181,7 @@ export class AIService {
     }
   }
 
-  private async callOpenAI(prompt: string, maxTokens: number = 150): Promise<string> {
+  async callOpenAI(prompt: string, maxTokens: number = 150): Promise<string> {
     let attempt = 0;
     
     while (attempt < this.maxRetries) {

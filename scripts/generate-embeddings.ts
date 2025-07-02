@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { AppModule } from '../services/api-gateway/src/modules/app.module';
-import { DrugService } from '../services/api-gateway/src/modules/drugs/services/drug.service';
+import { DrugRepository } from '../services/api-gateway/src/database/repositories/drug.repository';
 import { EmbeddingService } from '../services/api-gateway/src/modules/ai/services/embedding.service';
 import { DrugEntity } from '../services/api-gateway/src/database/entities/drug.entity';
 
@@ -17,21 +17,19 @@ async function generateEmbeddingsForExistingDrugs() {
     });
 
     // Get required services
-    const drugService = app.get(DrugService);
+    const drugRepository = app.get(DrugRepository);
     const embeddingService = app.get(EmbeddingService);
 
     // Get embedding statistics before starting
     const initialStats = await embeddingService.getEmbeddingStats();
     logger.log(`Initial embedding stats: ${JSON.stringify(initialStats)}`);
 
-    // Get all published drugs from the database
-    const drugsResult = await drugService.findAll({ 
-      page: 1, 
-      limit: 1000, // Adjust as needed
-      status: 'published' as any 
-    });
+    // Get all published drugs from the database with their actual IDs
+    const drugs = await drugRepository.createQueryBuilder('drug')
+      .leftJoinAndSelect('drug.aiContent', 'aiContent')
+      .where('drug.status = :status', { status: 'published' })
+      .getMany();
 
-    const drugs = drugsResult.data || [];
     logger.log(`Found ${drugs.length} published drugs to process`);
 
     if (drugs.length === 0) {
@@ -54,27 +52,10 @@ async function generateEmbeddingsForExistingDrugs() {
       // Process drugs in parallel within each batch
       const batchPromises = batch.map(async (drug) => {
         try {
-          logger.log(`Generating embeddings for: ${drug.drugName}`);
+          logger.log(`Generating embeddings for: ${drug.drugName} (ID: ${drug.id})`);
           
-          // Convert drug data to format expected by embedding service
-          const drugEntity: DrugEntity = {
-            id: drug.setId,
-            setId: drug.setId,
-            drugName: drug.drugName,
-            genericName: drug.genericName || null,
-            slug: drug.slug || '',
-            manufacturer: drug.labeler,
-            status: 'published' as any,
-            labelData: drug.label,
-            processedData: null,
-            aiContent: [],
-            seoMetadata: undefined as any,
-            processingLogs: [],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          const embeddings = await embeddingService.generateDrugEmbeddings(drugEntity);
+          // Drug is already a DrugEntity from the repository, no conversion needed
+          const embeddings = await embeddingService.generateDrugEmbeddings(drug);
           logger.log(`✅ Generated ${embeddings.length} embeddings for ${drug.drugName}`);
           return { success: true, drugName: drug.drugName, embeddingCount: embeddings.length };
         } catch (error: any) {

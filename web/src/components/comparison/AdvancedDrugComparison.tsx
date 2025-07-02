@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Search, Plus, X, ArrowUpDown, Star, AlertTriangle, 
   CheckCircle, Info, TrendingUp, BarChart3,
@@ -131,12 +132,24 @@ const userScenarios = [
   }
 ];
 
-export function AdvancedDrugComparison() {
-  const [selectedDrugs, setSelectedDrugs] = useState<DrugForComparison[]>([]);
+interface AdvancedDrugComparisonProps {
+  preselectedDrugs?: DrugForComparison[];
+  initialComparisonData?: ComparisonMatrix | null;
+  compactMode?: boolean;
+  onDrugsChange?: (drugs: DrugForComparison[]) => void;
+}
+
+export function AdvancedDrugComparison({ 
+  preselectedDrugs = [],
+  initialComparisonData = null,
+  compactMode = false,
+  onDrugsChange
+}: AdvancedDrugComparisonProps) {
+  const [selectedDrugs, setSelectedDrugs] = useState<DrugForComparison[]>(preselectedDrugs);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<DrugForComparison[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [comparisonData, setComparisonData] = useState<ComparisonMatrix | null>(null);
+  const [comparisonData, setComparisonData] = useState<ComparisonMatrix | null>(initialComparisonData);
   const [isComparing, setIsComparing] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<string>('general');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['efficacy', 'safety']);
@@ -144,6 +157,31 @@ export function AdvancedDrugComparison() {
   const [userType] = useState<'patient' | 'provider' | 'general'>('general');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['summary']));
   const [aiSearchEnabled, setAiSearchEnabled] = useState(true);
+  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Internal function to handle URL updates
+  const updateUrlWithDrugs = useCallback((drugs: DrugForComparison[]) => {
+    if (!onDrugsChange) {
+      // If no callback provided, handle URL update internally
+      const sortedSlugs = drugs
+        .map(d => d.slug)
+        .sort()
+        .filter(Boolean);
+      
+      const newParams = new URLSearchParams();
+      if (sortedSlugs.length > 0) {
+        newParams.set('drugs', sortedSlugs.join(','));
+      }
+      
+      const newUrl = sortedSlugs.length > 0 
+        ? `/drugs/compare?${newParams.toString()}`
+        : '/drugs/compare';
+      
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [router, onDrugsChange]);
 
   const searchDrugs = async (query: string) => {
     console.log('searchDrugs called with query:', query);
@@ -234,15 +272,31 @@ export function AdvancedDrugComparison() {
     }
     
     if (!selectedDrugs.find(d => d.setId === drug.setId)) {
-      setSelectedDrugs([...selectedDrugs, drug]);
+      const newDrugs = [...selectedDrugs, drug];
+      setSelectedDrugs(newDrugs);
       setSearchQuery('');
       setSearchResults([]);
+      
+      // Update URL
+      if (onDrugsChange) {
+        onDrugsChange(newDrugs);
+      } else {
+        updateUrlWithDrugs(newDrugs);
+      }
     }
   };
 
   const removeDrugFromComparison = (drugId: string) => {
-    setSelectedDrugs(selectedDrugs.filter(d => d.setId !== drugId));
+    const newDrugs = selectedDrugs.filter(d => d.setId !== drugId);
+    setSelectedDrugs(newDrugs);
     setComparisonData(null);
+    
+    // Update URL
+    if (onDrugsChange) {
+      onDrugsChange(newDrugs);
+    } else {
+      updateUrlWithDrugs(newDrugs);
+    }
   };
 
   const performComparison = async () => {
@@ -360,7 +414,9 @@ export function AdvancedDrugComparison() {
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Drug Selection */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Select Drugs to Compare</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          {compactMode ? 'Modify Drug Selection' : 'Select Drugs to Compare'}
+        </h3>
         
         {/* Search Bar with AI Toggle */}
         <div className="relative space-y-2 mb-6">

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // If there's a search term, use the search endpoint
     if (search) {
       // Call the search endpoint on API Gateway
-      const searchUrl = `${API_GATEWAY_URL}/drugs/search?term=${encodeURIComponent(search)}&limit=${limit}`;
+      const searchUrl = `${API_GATEWAY_URL}/drugs/search?q=${encodeURIComponent(search)}&limit=${limit}`;
       
       const response = await fetch(searchUrl, {
         headers: {
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     let drugData: any[] = [];
     if (drugSlugs) {
       const drugPromises = drugSlugs.map((slug: string) => 
-        fetch(`${API_GATEWAY_URL}/drugs/slug/${slug}`, {
+        fetch(`${API_GATEWAY_URL}/drugs/${slug}`, {
           headers: { 'Content-Type': 'application/json' },
         }).then(res => res.ok ? res.json() : null)
       );

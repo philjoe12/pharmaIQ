@@ -166,8 +166,20 @@ export class EmbeddingService {
   /**
    * Helper methods for handling different drug types
    */
-  private getDrugId(drug: DrugEntity | FDALabel): string {
-    return 'id' in drug ? drug.id : drug.setId;
+  private getDrugId(drug: any): string {
+    // Handle both DrugEntity and FDALabel formats
+    // For DrugEntity: use drug.id (the actual database ID)
+    // For FDALabel: first try to find the actual drug.id, then fallback to setId
+    if (drug.id && typeof drug.id === 'string' && drug.id.includes('-')) {
+      // This looks like a UUID (database ID)
+      return drug.id;
+    }
+    // If we have a setId but no proper id, this is likely an FDALabel
+    // In this case, we should not proceed as we need the actual database ID
+    if (drug.setId && !drug.id) {
+      throw new Error(`Cannot generate embeddings: drug has setId (${drug.setId}) but no database ID. Please ensure the drug is saved to database first.`);
+    }
+    return drug.id || drug._id;
   }
 
   private getDrugName(drug: DrugEntity | FDALabel): string {

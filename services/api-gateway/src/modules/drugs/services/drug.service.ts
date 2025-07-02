@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -12,6 +12,7 @@ import { ElasticsearchService } from '../../search/services/elasticsearch.servic
 import { DrugEventsPublisher } from '../../events/publishers/drug-events.publisher';
 import { AICacheService } from '../../../common/services/ai-cache.service';
 import { EmbeddingService } from '../../ai/services/embedding.service';
+import { AIService } from '../../ai/services/ai.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -52,6 +53,7 @@ export class DrugService {
     private readonly drugEventsPublisher: DrugEventsPublisher,
     private readonly aiCacheService: AICacheService,
     private readonly embeddingService: EmbeddingService,
+    @Inject(forwardRef(() => AIService)) private readonly aiService: AIService,
     @InjectQueue('ai-enhancement') private aiQueue: Queue,
     @InjectQueue('label-processing') private processingQueue: Queue,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -242,6 +244,77 @@ export class DrugService {
     const drugs = await Promise.all(ids.map(id => this.findById(id)));
     await this.cacheManager.set(cacheKey, drugs, 600);
     return drugs;
+  }
+
+  async getCachedComparison(cacheKey: string): Promise<any | null> {
+    // First check for AI comparison cache
+    const comparisonResult = await this.aiCacheService.getComparisonResult(cacheKey);
+    if (comparisonResult) {
+      // Track this as a popular comparison
+      await this.aiCacheService.trackPopularComparison(cacheKey);
+      return comparisonResult;
+    }
+    
+    // Check if we have cached drug data at least
+    const slugs = cacheKey.split(',');
+    if (slugs.length >= 2) {
+      const drugs = await this.compareDrugs(slugs);
+      if (drugs && drugs.length >= 2) {
+        // Return basic comparison data
+        return {
+          drugs,
+          comparisonMatrix: this.generateBasicComparisonMatrix(drugs),
+          aiAnalysis: null
+        };
+      }
+    }
+    
+    return null;
+  }
+
+  private generateBasicComparisonMatrix(drugs: DrugLabel[]): any[] {
+    return [
+      {
+        category: 'Basic Information',
+        metrics: [
+          {
+            metric: 'Generic Name',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: drug.label?.genericName || 'N/A'
+            }))
+          },
+          {
+            metric: 'Manufacturer',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: drug.labeler || 'N/A'
+            }))
+          }
+        ]
+      },
+      {
+        category: 'Clinical Use',
+        metrics: [
+          {
+            metric: 'Primary Indications',
+            values: drugs.map(drug => ({
+              drug: drug.drugName,
+              value: this.extractFirstSentence(drug.label?.indicationsAndUsage) || 'N/A'
+            }))
+          }
+        ]
+      }
+    ];
+  }
+
+  private extractFirstSentence(text: string | undefined): string {
+    if (!text) return '';
+    return text
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(/[.!?]/)[0] || '';
   }
 
   async searchDrugs(searchTerm: string): Promise<DrugLabel[]> {
@@ -566,32 +639,68 @@ export class DrugService {
     try {
       // Parse natural language query using AI
       const searchIntent = await this.parseSearchIntent(query, userType);
+      console.log('Parsed search intent:', searchIntent);
       
-      // Try Elasticsearch first for better search results
+      // For natural language queries (especially condition searches), prioritize semantic search
       let results: DrugEntity[] = [];
+      let semanticResults: any[] = [];
       
-      try {
-        const esResults = await this.searchAggregator.performHybridSearch(query, { 
-          limit: limit * 2,
-          filters 
-        });
-        
-        if (esResults.results?.length > 0) {
-          // Convert ES results to drug entities
-          results = await Promise.all(
-            esResults.results.map(async (result: any) => {
-              const drug = await this.drugRepository
-                .createQueryBuilder('drug')
-                .leftJoinAndSelect('drug.aiContent', 'aiContent')
-                .where('drug.slug = :slug', { slug: result.slug })
-                .andWhere('drug.status = :status', { status: 'published' })
-                .getOne();
-              return drug;
-            })
-          ).then(drugs => drugs.filter(d => d !== null) as DrugEntity[]);
+      // Always try semantic search first for natural language queries
+      if (searchIntent.category === 'condition' || query.split(' ').length > 2) {
+        try {
+          console.log('Performing semantic search for query:', query);
+          
+          // Use embedding service for semantic search
+          semanticResults = await this.embeddingService.semanticSearch(query, {
+            contentType: 'summary',
+            limit: limit,
+            threshold: 0.2  // Lower threshold for better recall
+          });
+          
+          console.log(`Semantic search returned ${semanticResults.length} results`);
+          
+          if (semanticResults.length > 0) {
+            // Convert semantic search results to drug entities
+            results = semanticResults.map(result => result.drug).filter(drug => drug !== null);
+          }
+        } catch (embeddingError) {
+          console.error('Semantic search failed:', embeddingError);
         }
-      } catch (esError) {
-        console.error('Elasticsearch smart search failed, falling back to database:', esError);
+      }
+      
+      // If semantic search didn't return enough results, try Elasticsearch
+      if (results.length < limit / 2) {
+        try {
+          const esResults = await this.searchAggregator.performHybridSearch(query, { 
+            limit: limit * 2,
+            filters 
+          });
+          
+          if (esResults.results?.length > 0) {
+            // Convert ES results to drug entities
+            const esEntities = await Promise.all(
+              esResults.results.map(async (result: any) => {
+                const drug = await this.drugRepository
+                  .createQueryBuilder('drug')
+                  .leftJoinAndSelect('drug.aiContent', 'aiContent')
+                  .where('drug.slug = :slug', { slug: result.slug })
+                  .andWhere('drug.status = :status', { status: 'published' })
+                  .getOne();
+                return drug;
+              })
+            ).then(drugs => drugs.filter(d => d !== null) as DrugEntity[]);
+            
+            // Merge with semantic results, avoiding duplicates
+            const existingIds = new Set(results.map(r => r.id));
+            esEntities.forEach(drug => {
+              if (!existingIds.has(drug.id)) {
+                results.push(drug);
+              }
+            });
+          }
+        } catch (esError) {
+          console.error('Elasticsearch smart search failed:', esError);
+        }
       }
 
       // Fallback to database search if Elasticsearch fails
@@ -793,7 +902,7 @@ export class DrugService {
   }
 
   private async parseSearchIntent(query: string, userType: string): Promise<any> {
-    // Simple intent parsing - would use AI for more sophisticated analysis
+    // Use AI for sophisticated intent parsing
     const intent = {
       drugName: null,
       condition: null,
@@ -801,9 +910,40 @@ export class DrugService {
       category: 'general',
     };
 
+    try {
+      // Use AI to parse the intent
+      const prompt = `Analyze this medical search query and extract the intent:
+Query: "${query}"
+
+Identify if the user is searching for:
+1. A specific drug name
+2. A medical condition or symptom
+3. A manufacturer
+4. General information
+
+Return a JSON object with exactly this structure:
+{
+  "category": "drug|condition|manufacturer|general",
+  "drugName": "extracted drug name or null",
+  "condition": "extracted condition/symptom or null",
+  "manufacturer": "extracted manufacturer or null"
+}
+
+Examples:
+- "What treats migraines effectively?" -> {"category": "condition", "condition": "migraines", "drugName": null, "manufacturer": null}
+- "Taltz side effects" -> {"category": "drug", "drugName": "Taltz", "condition": null, "manufacturer": null}
+- "drugs by Eli Lilly" -> {"category": "manufacturer", "manufacturer": "Eli Lilly", "drugName": null, "condition": null}`;
+
+      const response = await (this.aiService as any).callOpenAI(prompt, 150);
+      const parsed = JSON.parse(response);
+      return parsed;
+    } catch (error) {
+      console.error('AI intent parsing failed, using fallback:', error);
+    }
+
+    // Fallback to simple pattern matching if AI fails
     const queryLower = query.toLowerCase();
     
-    // Simple pattern matching
     if (queryLower.includes('for') || queryLower.includes('treat')) {
       intent.category = 'condition';
       intent.condition = query.split(/for|treat/i)[1]?.trim();
