@@ -14,7 +14,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./infrastructure/docker/scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pharmaiq"]
+      test: ["CMD-SHELL", "pg_isready -U pharmaiq -d pharmaiq_db"]
       interval: 2s
       timeout: 2s
       retries: 10
@@ -98,7 +98,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://api:3001
     depends_on:
       - api
     volumes:
