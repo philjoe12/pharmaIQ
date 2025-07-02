@@ -33,12 +33,19 @@ jobs:
       - name: Setup Docker on macOS
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install --cask docker
-          echo "Installing Docker Desktop for Mac..."
-          # Note: Docker Desktop requires manual start on macOS runners
-          # Using colima as an alternative
+          # Don't try to install Docker Desktop - use Colima instead
+          echo "Installing Colima (Docker alternative for CI)..."
           brew install colima docker docker-compose
-          colima start --cpu 2 --memory 4
+          
+          # Start Colima with sufficient resources
+          colima start --cpu 2 --memory 4 --disk 10
+          
+          # Wait for Docker to be ready
+          sleep 10
+          
+          # Verify Docker is working
+          docker version
+          docker-compose version
           
       - name: Setup Docker on Windows
         if: startsWith(matrix.os, 'windows')

@@ -99,13 +99,24 @@ jobs:
           docker-compose up -d postgres redis
           
           echo "Waiting for services to start..."
-          sleep 30
+          # Wait longer for services to be fully ready
+          attempts=0
+          max_attempts=30
+          until docker-compose exec -T postgres pg_isready -U pharmaiq >/dev/null 2>&1; do
+            if [ $attempts -eq $max_attempts ]; then
+              echo "✗ PostgreSQL failed to start"
+              docker-compose logs postgres
+              exit 1
+            fi
+            echo "Waiting for PostgreSQL... ($attempts/$max_attempts)"
+            sleep 2
+            attempts=$((attempts + 1))
+          done
+          
+          echo "✓ PostgreSQL is ready"
           
           echo "Checking service status..."
           docker-compose ps
-          
-          echo "Testing PostgreSQL connection..."
-          docker-compose exec -T postgres pg_isready -U pharmaiq && echo "✓ PostgreSQL is ready" || echo "✗ PostgreSQL not ready"
           
           echo "Stopping services..."
           docker-compose down -v

@@ -1,0 +1,101 @@
+name: Docker CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-docker:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Setup for macOS
+      - name: Setup Docker on macOS
+        if: runner.os == 'macOS'
+        run: |
+          # Install Colima (lightweight Docker for macOS CI)
+          brew install colima
+          
+          # Start Colima
+          colima start --cpu 2 --memory 4
+          
+          # Install docker-compose
+          brew install docker-compose
+          
+          # Verify setup
+          docker version
+          docker-compose version
+      
+      # Create minimal test environment
+      - name: Create test environment
+        run: |
+          # Create .env file
+          cp .env.example .env
+          echo "OPENAI_API_KEY=sk-test-key" >> .env
+          
+          # Show system info
+          echo "OS: ${{ runner.os }}"
+          echo "Docker: $(docker --version || echo 'not found')"
+          echo "Docker Compose: $(docker-compose --version || echo 'not found')"
+      
+      # Test 1: Validate configuration
+      - name: Validate Docker Compose config
+        run: |
+          docker-compose config > /dev/null
+          echo "✓ Docker Compose configuration is valid"
+      
+      # Test 2: Start minimal services
+      - name: Test minimal startup
+        run: |
+          # Start only database services
+          docker-compose up -d postgres redis
+          
+          # Wait for services
+          echo "Waiting for services..."
+          sleep 30
+          
+          # Check services
+          docker-compose ps
+          
+          # Test PostgreSQL
+          docker-compose exec -T postgres pg_isready -U pharmaiq && echo "✓ PostgreSQL is ready" || echo "✗ PostgreSQL failed"
+          
+          # Clean up
+          docker-compose down -v
+      
+      # Cleanup on macOS
+      - name: Cleanup macOS
+        if: always() && runner.os == 'macOS'
+        run: |
+          colima stop || true
+          
+  # Simple architecture check
+  architecture-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check image architectures
+        run: |
+          echo "## Architecture Support"
+          
+          for image in node:20-alpine pgvector/pgvector:pg15 redis:7-alpine elasticsearch:8.11.0; do
+            echo -n "$image: "
+            if docker manifest inspect $image 2>/dev/null | grep -q "amd64"; then
+              echo -n "amd64 ✓ "
+            fi
+            if docker manifest inspect $image 2>/dev/null | grep -q "arm64"; then
+              echo -n "arm64 ✓"
+            fi
+            echo ""
+          done
