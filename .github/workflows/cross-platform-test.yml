@@ -37,11 +37,18 @@ jobs:
           echo "Installing Colima (Docker alternative for CI)..."
           brew install colima docker docker-compose
           
-          # Start Colima with sufficient resources
-          colima start --cpu 2 --memory 4 --disk 10
+          # Start Colima with QEMU driver for GitHub Actions compatibility
+          colima start --runtime docker --cpu 2 --memory 4 --disk 10 --vm-type qemu --arch aarch64
           
           # Wait for Docker to be ready
-          sleep 10
+          for i in {1..30}; do
+            if docker info >/dev/null 2>&1; then
+              echo "Docker daemon is ready"
+              break
+            fi
+            echo "Waiting for Docker daemon to start... ($i/30)"
+            sleep 2
+          done
           
           # Verify Docker is working
           docker version

@@ -24,14 +24,21 @@ jobs:
       - name: Setup Docker on macOS
         if: runner.os == 'macOS'
         run: |
-          # Install Colima (lightweight Docker for macOS CI)
-          brew install colima
+          # Install Colima and docker tools
+          brew install colima docker docker-compose
           
-          # Start Colima
-          colima start --cpu 2 --memory 4
+          # Start Colima with QEMU (VZ doesn't work in GitHub Actions)
+          colima start --runtime docker --cpu 2 --memory 4 --vm-type qemu --arch aarch64
           
-          # Install docker-compose
-          brew install docker-compose
+          # Wait for Docker daemon
+          for i in {1..30}; do
+            if docker info >/dev/null 2>&1; then
+              echo "Docker is ready"
+              break
+            fi
+            echo "Waiting for Docker... ($i/30)"
+            sleep 2
+          done
           
           # Verify setup
           docker version

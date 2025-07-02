@@ -50,8 +50,19 @@ jobs:
           # Install Docker and Colima
           brew install docker docker-compose colima
           
-          # Start Colima with sufficient resources
-          colima start --cpu 2 --memory 4 --disk 10
+          # Start Colima with QEMU driver (more compatible with GitHub Actions)
+          # VZ driver doesn't work well in GitHub Actions
+          colima start --runtime docker --cpu 2 --memory 4 --disk 10 --vm-type qemu --arch aarch64
+          
+          # Wait for Docker to be ready
+          for i in {1..30}; do
+            if docker info >/dev/null 2>&1; then
+              echo "Docker is ready"
+              break
+            fi
+            echo "Waiting for Docker to start... ($i/30)"
+            sleep 2
+          done
           
           # Verify installation
           docker --version
