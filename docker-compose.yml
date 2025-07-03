@@ -52,8 +52,9 @@ services:
 
   # Consolidated API Backend
   api:
-    image: node:20-alpine
-    working_dir: /app/services/api-gateway
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
     ports:
       - "3001:3001"
     environment:
@@ -82,12 +83,9 @@ services:
       - api-node-modules:/app/services/api-gateway/node_modules
     command: sh -c "npm install && npm run migration:run && npx ts-node -r tsconfig-paths/register src/main.ts"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
+      - postgres
+      - redis
+      - elasticsearch
 
   # Web Frontend
   web:
@@ -124,8 +122,7 @@ services:
       REDIS_PORT: 6379
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
     volumes:
       - ./services/ai-worker/src:/app/services/ai-worker/src
       - ./services/ai-worker/package.json:/app/services/ai-worker/package.json
@@ -149,10 +146,8 @@ services:
       DATABASE_NAME: pharmaiq_db
       DATABASE_URL: postgresql://pharmaiq:pharmaiq_dev@postgres:5432/pharmaiq_db
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - postgres
+      - redis
     volumes:
       - ./services/processing-worker/src:/app/services/processing-worker/src
       - ./services/processing-worker/package.json:/app/services/processing-worker/package.json
@@ -176,10 +171,8 @@ services:
       DATABASE_NAME: pharmaiq_db
       DATABASE_URL: postgresql://pharmaiq:pharmaiq_dev@postgres:5432/pharmaiq_db
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - postgres
+      - redis
     volumes:
       - ./services/seo-worker/src:/app/services/seo-worker/src
       - ./services/seo-worker/package.json:/app/services/seo-worker/package.json
