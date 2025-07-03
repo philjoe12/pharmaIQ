@@ -9,7 +9,7 @@ export class DrugContentEntity {
   @Column({ name: 'drug_id' })
   drugId: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'page_title' })
   title?: string;
 
   @Column({ type: 'text', nullable: true })

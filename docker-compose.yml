@@ -56,7 +56,7 @@ services:
       context: .
       dockerfile: services/api-gateway/Dockerfile
     ports:
-      - "3001:3001"
+      - "${API_PORT:-3001}:3001"
     environment:
       NODE_ENV: development
       PORT: 3001
@@ -74,6 +74,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       # Elasticsearch
       ELASTICSEARCH_NODE: http://elasticsearch:9200
+      # CORS
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     volumes:
       # Mount the entire project so shared types work
       - .:/app
@@ -92,10 +94,11 @@ services:
     image: node:20-alpine
     working_dir: /app/web
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://api:3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      API_GATEWAY_URL: http://api:3001
     depends_on:
       - api
     volumes:

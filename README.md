@@ -50,21 +50,33 @@ newgrp docker
    cd pharmaIQ
    ```
 
-2. **Start with Docker Compose** (Simple Method)
+2. **Configure Environment**
    ```bash
-   # Optional: Set OpenAI API key for AI features
-   export OPENAI_API_KEY="your-key-here"  # or add to .env file
+   # Copy the example environment file
+   cp .env.example .env
    
+   # IMPORTANT: Edit .env and add your OpenAI API key
+   # The AI features require a valid OpenAI API key to function
+   nano .env  # or use your preferred editor
+   # Update: OPENAI_API_KEY=your-actual-openai-api-key-here
+   ```
+
+3. **Start with Docker Compose**
+   ```bash
    # Start all services
    docker-compose up
    ```
    
-   That's it! The application will:
-   - Start all required services
-   - Initialize the database automatically
+   The application will automatically:
+   - Install all dependencies
+   - Initialize the PostgreSQL database with pgvector
+   - Run database migrations
+   - Start all microservices
    - Be ready in ~30-60 seconds
+   
+   **Note**: The first run may take 2-3 minutes as it downloads Docker images and installs dependencies.
 
-3. **Access the Application**
+4. **Access the Application**
    
    **From the Server:**
    - Frontend: `http://localhost:3000`
@@ -75,6 +87,125 @@ newgrp docker
    - API: `http://<server-ip>:3001`
    
    **Note for Remote Access:** The frontend is configured to accept connections from any IP address.
+
+## 🌐 Remote Deployment Configuration
+
+When deploying to a remote server, you need to update the environment configuration:
+
+### For Simple Remote Access (Development)
+
+If you just want to access from another computer on your network:
+- The default configuration already works! 
+- Access via `http://<server-ip>:3000` and `http://<server-ip>:3001`
+- The API routes (`/api/*`) will automatically work
+
+### For Production Deployment
+
+1. **Update Environment Variables**
+
+   Create a `.env` file (copy from `.env.example`):
+   ```bash
+   cp .env.example .env
+   ```
+
+   Then update for your server:
+   ```bash
+   # For production with domain
+   NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+   
+   # Or for remote server with IP
+   NEXT_PUBLIC_API_URL=http://your-server-ip:3001
+   ```
+
+2. **Update CORS Settings**
+
+   The API Gateway needs to allow your frontend domain. In `docker-compose.yml`, add:
+   ```yaml
+   api:
+     environment:
+       CORS_ORIGIN: https://yourdomain.com,http://your-server-ip:3000
+   ```
+
+3. **Use a Reverse Proxy (Recommended)**
+
+   For production, use nginx to handle SSL and routing:
+   ```nginx
+   server {
+       listen 80;
+       server_name yourdomain.com;
+       
+       location / {
+           proxy_pass http://localhost:3000;
+       }
+       
+       location /api {
+           proxy_pass http://localhost:3001;
+       }
+   }
+   ```
+
+### Important Notes
+
+- The `/api/*` routes in the frontend are relative, so they automatically work with your domain
+- Internal Docker communication (between services) always uses `http://api:3001`
+- Only the `NEXT_PUBLIC_API_URL` needs to be updated for external access
+- Database and Redis remain internal to Docker network (secure by default)
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+1. **500 Errors on API Calls**
+   - **Cause**: Missing OpenAI API key or services not fully started
+   - **Solution**: 
+     - Ensure you've set a valid `OPENAI_API_KEY` in your `.env` file
+     - Wait for all services to fully start (check logs with `docker-compose logs`)
+     - Verify database migrations completed: `docker-compose logs api | grep migration`
+
+2. **Cannot Connect from Remote Machine**
+   - **Cause**: CORS or API URL misconfiguration
+   - **Solution**: Update your `.env` file:
+     ```bash
+     NEXT_PUBLIC_API_URL=http://your-server-ip:3001
+     CORS_ORIGIN=http://your-server-ip:3000
+     ```
+   - Then restart: `docker-compose down && docker-compose up`
+
+3. **Database Connection Issues**
+   - **Cause**: Database not initialized or migrations failed
+   - **Solution**: 
+     - Check database logs: `docker-compose logs postgres`
+     - Reset database if needed: `docker-compose down -v && docker-compose up`
+     - The `-v` flag removes volumes, giving you a fresh start
+
+4. **Port Already in Use**
+   - **Cause**: Another service using ports 3000, 3001, 5432, etc.
+   - **Solution**: 
+     - Stop conflicting services, or
+     - Change ports in `.env`:
+       ```bash
+       FRONTEND_PORT=3002
+       API_PORT=3003
+       ```
+
+### Useful Commands
+
+```bash
+# View logs for all services
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f api
+
+# Restart a specific service
+docker-compose restart api
+
+# Reset everything (including database)
+docker-compose down -v && docker-compose up
+
+# Check if migrations ran successfully
+docker-compose logs api | grep "migration"
+```
 
 ## 🏗️ Architecture Overview
 
