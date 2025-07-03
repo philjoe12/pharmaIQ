@@ -9,7 +9,7 @@ export class SEOMetadataEntity {
   @Column({ name: 'drug_id' })
   drugId: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'page_title' })
   title?: string;
 
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'meta_description' })
@@ -23,6 +23,15 @@ export class SEOMetadataEntity {
 
   @Column({ type: 'jsonb', nullable: true, name: 'structured_data' })
   structuredData?: Record<string, any>;
+
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'og_title' })
+  ogTitle?: string;
+
+  @Column({ type: 'text', nullable: true, name: 'og_description' })
+  ogDescription?: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true, name: 'og_image' })
+  ogImage?: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -11,7 +11,7 @@ import {
 import { DrugEntity } from './drug.entity';
 
 @Entity('drug_embeddings')
-@Unique(['drugId', 'contentType'])
+@Unique(['drugId', 'fieldName'])
 export class DrugEmbeddingEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,28 +23,15 @@ export class DrugEmbeddingEntity {
   @JoinColumn({ name: 'drug_id' })
   drug: DrugEntity;
 
-  @Column({ name: 'content_type', length: 50 })
-  contentType: 'summary' | 'indications' | 'full_label';
+  @Column({ name: 'field_name', length: 100 })
+  fieldName: string;
 
-  @Column({ name: 'content_text', type: 'text' })
-  contentText: string;
 
-  @Column({
-    type: 'text', // We'll handle vector conversion in the repository
-    nullable: true,
-    transformer: {
-      to: (value: number[]) => value ? JSON.stringify(value) : null,
-      from: (value: string) => value ? JSON.parse(value) : null
-    }
-  })
+  @Column({ type: 'simple-array', nullable: true })
   embedding: number[];
 
-  @Column({ 
-    name: 'model_name', 
-    length: 100, 
-    default: 'text-embedding-3-small' 
-  })
-  modelName: string;
+  @Column({ type: 'jsonb', nullable: true, default: '{}' })
+  metadata: Record<string, any>;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -163,25 +163,50 @@ export function AdvancedDrugComparison({
 
   // Internal function to handle URL updates
   const updateUrlWithDrugs = useCallback((drugs: DrugForComparison[]) => {
+    console.log('updateUrlWithDrugs called with:', drugs);
+    
     if (!onDrugsChange) {
-      // If no callback provided, handle URL update internally
-      const sortedSlugs = drugs
-        .map(d => d.slug)
-        .sort()
-        .filter(Boolean);
-      
-      const newParams = new URLSearchParams();
-      if (sortedSlugs.length > 0) {
-        newParams.set('drugs', sortedSlugs.join(','));
+      if (drugs.length > 0) {
+        // Sort drugs for consistent URLs
+        const sortedDrugs = [...drugs].sort((a, b) => a.drugName.localeCompare(b.drugName));
+        
+        // Create SEO-friendly query parameters
+        const params = new URLSearchParams();
+        
+        // Create drug identifiers with name and partial ID (last 7 chars of setId)
+        const drugIdentifiers = sortedDrugs.map(d => {
+          const shortId = d.setId.slice(-7); // Get last 7 characters of setId
+          return `${d.slug}-${shortId}`;
+        });
+        
+        // Add drug identifiers for API (e.g., "mounjaro-d2d7da5,olumiant-866e9f3")
+        params.set('drugs', drugIdentifiers.join(','));
+        
+        // Add drug names for SEO (e.g., "mounjaro-vs-olumiant")
+        params.set('compare', sortedDrugs.map(d => d.slug).join('-vs-'));
+        
+        // Build the new URL
+        const newUrl = `/drugs/compare?${params.toString()}`;
+        
+        console.log('New URL will be:', newUrl);
+        
+        // Update browser URL and title without navigation
+        const pageTitle = `${sortedDrugs.map(d => d.drugName).join(' vs ')} - Drug Comparison | PharmaIQ`;
+        
+        // Use Next.js router to update URL without navigation
+        router.push(newUrl, undefined, { shallow: true });
+        
+        // Also update the document title
+        document.title = pageTitle;
+        
+        console.log('URL and title updated successfully!');
+      } else {
+        // If no drugs selected, reset to base URL
+        router.push('/drugs/compare', undefined, { shallow: true });
+        document.title = 'Compare Drugs - Advanced Medication Comparison | PharmaIQ';
       }
-      
-      const newUrl = sortedSlugs.length > 0 
-        ? `/drugs/compare?${newParams.toString()}`
-        : '/drugs/compare';
-      
-      router.replace(newUrl, { scroll: false });
     }
-  }, [router, onDrugsChange]);
+  }, [onDrugsChange, router]);
 
   const searchDrugs = async (query: string) => {
     console.log('searchDrugs called with query:', query);
@@ -266,6 +291,11 @@ export function AdvancedDrugComparison({
   };
 
   const addDrugToComparison = (drug: DrugForComparison) => {
+    console.log('=== ADD DRUG TO COMPARISON ===');
+    console.log('Drug being added:', drug);
+    console.log('Current selected drugs:', selectedDrugs);
+    console.log('onDrugsChange prop:', onDrugsChange);
+    
     if (selectedDrugs.length >= 5) {
       alert('Maximum 5 drugs can be compared at once');
       return;
@@ -273,16 +303,21 @@ export function AdvancedDrugComparison({
     
     if (!selectedDrugs.find(d => d.setId === drug.setId)) {
       const newDrugs = [...selectedDrugs, drug];
+      console.log('New drugs array:', newDrugs);
       setSelectedDrugs(newDrugs);
       setSearchQuery('');
       setSearchResults([]);
       
       // Update URL
       if (onDrugsChange) {
+        console.log('Calling onDrugsChange prop');
         onDrugsChange(newDrugs);
       } else {
+        console.log('Calling updateUrlWithDrugs');
         updateUrlWithDrugs(newDrugs);
       }
+    } else {
+      console.log('Drug already selected');
     }
   };
 
@@ -346,6 +381,12 @@ export function AdvancedDrugComparison({
             console.log('Setting comparison data...');
             setComparisonData(result.data);
             console.log('Comparison data set successfully!');
+            console.log('Data is automatically cached in Redis by the API');
+            
+            // Update URL with selected drugs for SEO
+            setTimeout(() => {
+              updateUrlWithDrugs(selectedDrugs);
+            }, 100); // Small delay to ensure state is updated
           } else {
             console.error('Invalid response structure:', result);
             alert('Received invalid response from server');

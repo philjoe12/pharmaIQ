@@ -9,26 +9,26 @@ export class DrugContentEntity {
   @Column({ name: 'drug_id' })
   drugId: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   title?: string;
 
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  indications?: string[];
+  @Column({ type: 'text', nullable: true })
+  indications?: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  contraindications?: string[];
+  @Column({ type: 'text', nullable: true })
+  contraindications?: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  dosage?: Record<string, any>;
+  @Column({ type: 'text', nullable: true })
+  dosage?: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  warnings?: string[];
+  @Column({ type: 'text', nullable: true })
+  warnings?: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  sideEffects?: string[];
+  @Column({ type: 'text', nullable: true })
+  sideEffects?: string;
 
   @Column({ type: 'jsonb', nullable: true })
   enhancedContent?: Record<string, any>;

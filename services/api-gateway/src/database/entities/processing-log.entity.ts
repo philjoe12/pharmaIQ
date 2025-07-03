@@ -13,28 +13,31 @@ export class ProcessingLogEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'drug_id', nullable: true })
   drugId: string;
 
-  @Column()
-  stage: string;
+  @Column({ name: 'task_type', length: 100 })
+  taskType: string;
 
-  @Column()
-  status: 'started' | 'completed' | 'failed';
+  @Column({ type: 'enum', enum: ['pending', 'processing', 'completed', 'failed'], default: 'pending' })
+  status: 'pending' | 'processing' | 'completed' | 'failed';
 
-  @Column('text', { nullable: true })
-  message: string;
+  @Column({ name: 'started_at', type: 'timestamp with time zone', nullable: true })
+  startedAt: Date;
 
-  @Column('jsonb', { nullable: true })
+  @Column({ name: 'completed_at', type: 'timestamp with time zone', nullable: true })
+  completedAt: Date;
+
+  @Column({ type: 'jsonb', nullable: true, default: '{}' })
   metadata: Record<string, any>;
 
-  @Column('text', { nullable: true })
-  error: string;
+  @Column({ name: 'error_message', type: 'text', nullable: true })
+  errorMessage: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
   @ManyToOne(() => DrugEntity)
-  @JoinColumn({ name: 'drugId' })
+  @JoinColumn({ name: 'drug_id' })
   drug: DrugEntity;
 }

@@ -1,196 +1,132 @@
-# PharmaIQ Development Environment
+# PharmaIQ Docker Environment
 
-This directory contains the Docker-based development environment for PharmaIQ with optimized volume management for Node.js development.
+Simple Docker setup for running PharmaIQ locally.
 
 ## Quick Start
 
 ```bash
-# Start the development environment
-./scripts/dev-start.sh
-
-# For first time setup or after major changes
-./scripts/dev-start.sh --init
-
-# Clean everything and start fresh
-./scripts/dev-start.sh --clean
+# From the project root directory:
+docker-compose up
 ```
 
-## Volume Strategy
-
-Our development setup uses a hybrid volume approach:
-
-### 📁 Source Code (Bind Mounts)
-- Live editing capability
-- Changes immediately reflected in containers
-- Supports hot reloading
-
-### 📦 Dependencies (Named Volumes)
-- `node_modules` directories stored in Docker volumes
-- Prevents host/container conflicts
-- Faster container startup
-- Consistent across different host environments
-
-### 🔨 Build Artifacts (Named Volumes)
-- TypeScript compiled output (`dist/`)
-- Next.js build cache (`.next/`)
-- Preserved across container restarts
+That's it! The application will be available at:
+- Frontend: `http://localhost:3000` (or `http://<your-server-ip>:3000`)
+- API: `http://localhost:3001` (or `http://<your-server-ip>:3001`)
 
 ## Available Services
 
-| Service | Port | Description |
-|---------|------|-------------|
-| **Web Frontend** | 3000 | Next.js application |
-| **API Gateway** | 3001 | Main NestJS API + MCP Server |
-| **Processing Worker** | - | Background job processor |
-| **AI Worker** | - | AI/ML processing |
-| **SEO Worker** | - | SEO content generation |
-| **PostgreSQL** | 5432 | Primary database |
-| **Redis** | 6379 | Cache and queues |
+| Service | Port | Local Access | Remote Access |
+|---------|------|-------------|---------------|
+| **Web Frontend** | 3000 | `http://localhost:3000` | `http://<server-ip>:3000` |
+| **API Gateway** | 3001 | `http://localhost:3001` | `http://<server-ip>:3001` |
+| **PostgreSQL** | 5432 | `localhost:5432` | `<server-ip>:5432` |
+| **Redis** | 6379 | `localhost:6379` | `<server-ip>:6379` |
+| **Elasticsearch** | 9200 | `localhost:9200` | `<server-ip>:9200` |
 
-## Development Commands
+## Common Docker Commands
 
-### Environment Management
+### Basic Operations
 ```bash
-# Start development environment
-./scripts/dev-start.sh
+# Start services
+docker-compose up          # With logs
+docker-compose up -d       # In background
 
-# Check service health
-./scripts/dev-manage.sh health
+# Stop services
+docker-compose down        # Stop and remove containers
+docker-compose stop        # Just stop containers
 
-# View logs (all services)
-./scripts/dev-manage.sh logs
+# View logs
+docker-compose logs -f     # All services
+docker-compose logs -f web # Specific service
 
-# View logs (specific service)
-./scripts/dev-manage.sh logs api-gateway
+# Restart a service
+docker-compose restart web
 ```
 
-### Service Management
+## Troubleshooting Common Issues
+
+### Permission Denied (Linux)
 ```bash
-# Rebuild a specific service
-./scripts/dev-manage.sh rebuild api-gateway
+# Add user to docker group
+sudo usermod -aG docker $USER
+newgrp docker
 
-# Get shell access
-./scripts/dev-manage.sh shell api-gateway
-
-# Install new dependency
-./scripts/dev-manage.sh install web lodash
-./scripts/dev-manage.sh install api-gateway @types/node
+# Or run with sudo
+sudo docker-compose up
 ```
 
-### Testing
+### Port Already in Use
 ```bash
-# Run all tests
-./scripts/dev-manage.sh test
+# Find what's using the port
+sudo lsof -i :3000  # or :3001
 
-# Run tests for specific service
-./scripts/dev-manage.sh test api-gateway
+# Kill the process or change the port in docker-compose.yml
 ```
-
-### Maintenance
-```bash
-# Sync dependencies from host to containers
-./scripts/dev-manage.sh sync
-
-# Reset all volumes and start fresh
-./scripts/dev-manage.sh reset
-```
-
-## MCP Server Development
-
-The API Gateway includes an MCP (Model Context Protocol) server. To test MCP functionality:
-
-1. **Check MCP Server Status**:
-   ```bash
-   curl http://localhost:3001/mcp/health
-   ```
-
-2. **View MCP Logs**:
-   ```bash
-   ./scripts/dev-manage.sh logs api-gateway | grep -i mcp
-   ```
-
-3. **Test MCP Tools**:
-   Use the MCP Inspector or Claude Desktop to connect to `http://localhost:3001/mcp`
-
-## Troubleshooting
 
 ### Container Won't Start
 ```bash
-# Check container logs
-./scripts/dev-manage.sh logs <service-name>
+# Check logs
+docker-compose logs web  # or api, postgres, etc.
 
-# Rebuild the service
-./scripts/dev-manage.sh rebuild <service-name>
+# Rebuild the container
+docker-compose build --no-cache web
+docker-compose up
 ```
 
-### Missing Dependencies
+### OpenAI API Key Issues
 ```bash
-# Sync dependencies
-./scripts/dev-manage.sh sync
+# Set the API key (optional for basic functionality)
+export OPENAI_API_KEY="your-key-here"
 
-# Or rebuild with fresh install
-./scripts/dev-start.sh --init
+# Or create .env file
+echo "OPENAI_API_KEY=your-key-here" > .env
+
+# Then restart
+docker-compose down
+docker-compose up
 ```
 
-### TypeScript Compilation Errors
+### Database Reset
 ```bash
-# Check if shared packages are built
-./scripts/dev-manage.sh shell api-gateway
-# Inside container:
-cd /app/shared/types && npm run build
-cd /app/shared/contracts && npm run build
-```
+# Stop and remove database
+docker-compose down
+docker volume rm pharmaiq_postgres-data
 
-### Database Issues
-```bash
-# Reset database
-docker-compose down postgres
-docker volume rm docker_postgres_data
-docker-compose up -d postgres
+# Start fresh
+docker-compose up
 ```
 
 ### Complete Reset
 ```bash
-# Nuclear option - reset everything
-./scripts/dev-start.sh --clean
+# Remove everything and start fresh
+docker-compose down -v  # Removes all volumes
+docker-compose up
 ```
 
-## File Structure
+## Advanced Usage
 
-```
-infrastructure/docker/
-├── docker-compose.yml          # Main service definitions
-├── scripts/
-│   ├── dev-start.sh           # Environment startup
-│   ├── dev-manage.sh          # Management utilities
-│   └── init-db.sh             # Database initialization
-└── README.md                  # This file
+### Shell Access
+```bash
+# Access a container shell
+docker-compose exec web sh
+docker-compose exec api sh
 ```
 
-## Volume Details
+### Database Access
+```bash
+# Connect to PostgreSQL
+docker-compose exec postgres psql -U pharmaiq -d pharmaiq_db
+```
 
-### Named Volumes
-- `api-gateway-node-modules` - API Gateway dependencies
-- `processing-worker-node-modules` - Processing Worker dependencies
-- `ai-worker-node-modules` - AI Worker dependencies
-- `seo-worker-node-modules` - SEO Worker dependencies
-- `web-node-modules` - Web frontend dependencies
-- `shared-types-node-modules` - Shared types package
-- `shared-contracts-node-modules` - Shared contracts package
-- `shared-utils-node-modules` - Shared utilities package
-- `*-dist` - TypeScript build outputs
-- `web-next` - Next.js build cache
-
-### Benefits
-- **Consistency**: Same dependencies across all environments
-- **Performance**: Faster container startup and rebuilds
-- **Isolation**: Host system doesn't affect container dependencies
-- **Persistence**: Dependencies survive container recreation
+### Import Sample Data
+```bash
+# After services are running
+docker-compose exec api node /app/infrastructure/docker/scripts/import-labels.js
+```
 
 ## Tips
 
-1. **First Time Setup**: Always use `./scripts/dev-start.sh --init`
-2. **Adding Dependencies**: Use the management script to ensure proper installation
-3. **IDE Integration**: You can still install dependencies locally for IDE support
-4. **Hot Reloading**: All services support hot reloading for source changes
-5. **Debugging**: Use `./scripts/dev-manage.sh shell <service>` to debug inside containers
+1. **First time setup** takes ~30-60 seconds for all services to be ready
+2. **The frontend** accepts connections from any IP (0.0.0.0) for remote access
+3. **Hot reloading** works automatically - just edit files and save
+4. **OpenAI API key** is optional but enables AI features

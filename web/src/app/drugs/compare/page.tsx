@@ -17,11 +17,16 @@ async function fetchDrugsBySlug(slugs: string[]): Promise<Drug[]> {
   
   try {
     const apiUrl = process.env.API_GATEWAY_URL || 'http://api:3001';
-    const drugPromises = slugs.map(slug => 
-      fetch(`${apiUrl}/drugs/${slug}`, { cache: 'no-store' })
+    const drugPromises = slugs.map(slugWithId => {
+      // Handle both formats: "slug" or "slug-id"
+      const slug = slugWithId.includes('-') && slugWithId.match(/-[a-f0-9]{7}$/) 
+        ? slugWithId.substring(0, slugWithId.lastIndexOf('-'))
+        : slugWithId;
+      
+      return fetch(`${apiUrl}/drugs/${slug}`, { cache: 'no-store' })
         .then(res => res.ok ? res.json() : null)
-        .catch(() => null)
-    );
+        .catch(() => null);
+    });
     
     const drugs = await Promise.all(drugPromises);
     return drugs.filter((drug): drug is Drug => drug !== null);
@@ -34,9 +39,32 @@ async function fetchDrugsBySlug(slugs: string[]): Promise<Drug[]> {
 export async function generateMetadata({ 
   searchParams 
 }: { 
-  searchParams: { drugs?: string } 
+  searchParams: { drugs?: string; compare?: string } 
 }): Promise<Metadata> {
   const drugSlugs = searchParams.drugs?.split(',').filter(Boolean) || [];
+  const compareNames = searchParams.compare?.split('-vs-') || [];
+  
+  // If we have comparison names in URL, use them for SEO
+  if (compareNames.length >= 2) {
+    const formattedNames = compareNames.map(name => 
+      name.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ')
+    );
+    
+    return {
+      title: `${formattedNames.join(' vs ')} - Drug Comparison | PharmaIQ`,
+      description: `Compare ${formattedNames.join(' and ')} side-by-side. Comprehensive analysis including efficacy, safety, dosing, and drug interactions for healthcare professionals.`,
+      keywords: [
+        ...formattedNames.map(name => name.toLowerCase()),
+        'drug comparison',
+        'medication comparison',
+        `${formattedNames[0]} vs ${formattedNames[1]}`,
+        'side effects comparison',
+        'drug interactions'
+      ].join(', '),
+    };
+  }
   
   if (drugSlugs.length < 2) {
     return {
@@ -129,23 +157,50 @@ export default async function CompareDrugsPage({
   if (sortedSlugs.length >= 2) {
     preselectedDrugs = await fetchDrugsBySlug(sortedSlugs);
     
-    // Fetch cached comparison if available
+    // Fetch comparison data (from Redis cache or generate new)
     if (preselectedDrugs.length >= 2) {
       try {
         const apiUrl = process.env.API_GATEWAY_URL || 'http://api:3001';
         const cacheKey = sortedSlugs.join(',');
-        const response = await fetch(`${apiUrl}/drugs/compare/cached?key=${cacheKey}`, {
+        
+        // Try to get cached comparison from Redis
+        const cacheResponse = await fetch(`${apiUrl}/drugs/compare/cached?key=${cacheKey}`, {
           cache: 'no-store'
         });
         
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.data) {
-            initialComparisonData = result.data;
+        if (cacheResponse.ok) {
+          const cacheResult = await cacheResponse.json();
+          if (cacheResult.success && cacheResult.data) {
+            initialComparisonData = cacheResult.data;
+            console.log('Loaded comparison from Redis cache');
+          }
+        }
+        
+        // If no cached data, generate new AI-powered comparison
+        if (!initialComparisonData) {
+          console.log('No cached data, generating new AI comparison...');
+          const comparisonResponse = await fetch(`${apiUrl}/drugs/compare/ai`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              drugIds: preselectedDrugs.map(d => d.setId),
+              userType: 'provider',
+              scenario: 'general',
+              categories: ['efficacy', 'safety', 'administration', 'interactions']
+            }),
+            cache: 'no-store'
+          });
+          
+          if (comparisonResponse.ok) {
+            const comparisonResult = await comparisonResponse.json();
+            if (comparisonResult.success && comparisonResult.data) {
+              initialComparisonData = comparisonResult.data;
+              console.log('Generated new AI comparison');
+            }
           }
         }
       } catch (error) {
-        console.error('Error fetching cached comparison:', error);
+        console.error('Error fetching comparison:', error);
       }
     }
   }
@@ -228,25 +283,40 @@ export default async function CompareDrugsPage({
             </p>
           </div>
           
-          {/* Show SEO-optimized results if we have comparison data from URL */}
-          {initialComparisonData && preselectedDrugs.length >= 2 ? (
-            <>
-              {/* SEO-friendly static content */}
-              <ComparisonResults data={initialComparisonData} />
-              
-              {/* Interactive controls for modifying comparison */}
-              <div className="mt-12 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold mb-4">Modify Comparison</h3>
-                <p className="text-gray-600 mb-4">Add or remove drugs to update the comparison.</p>
+          {/* Show comparison results or loading state */}
+          {preselectedDrugs.length >= 2 ? (
+            initialComparisonData ? (
+              <>
+                {/* SEO-friendly static content */}
+                <ComparisonResults data={initialComparisonData} />
+                
+                {/* Interactive controls for modifying comparison */}
+                <div className="mt-12 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+                  <h3 className="text-lg font-semibold mb-4">Modify Comparison</h3>
+                  <p className="text-gray-600 mb-4">Add or remove drugs to update the comparison.</p>
+                  <AdvancedDrugComparison 
+                    preselectedDrugs={preselectedDrugs}
+                    initialComparisonData={initialComparisonData}
+                    compactMode={true}
+                  />
+                </div>
+              </>
+            ) : (
+              /* Show loading state while comparison loads */
+              <div className="text-center py-12">
+                <div className="inline-flex items-center gap-3 text-lg text-gray-600">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span>Generating AI-powered comparison...</span>
+                </div>
                 <AdvancedDrugComparison 
                   preselectedDrugs={preselectedDrugs}
-                  initialComparisonData={initialComparisonData}
+                  initialComparisonData={null}
                   compactMode={true}
                 />
               </div>
-            </>
+            )
           ) : (
-            /* Show full interactive component when no comparison data */
+            /* Show full interactive component when no drugs selected */
             <AdvancedDrugComparison 
               preselectedDrugs={preselectedDrugs}
               initialComparisonData={initialComparisonData}

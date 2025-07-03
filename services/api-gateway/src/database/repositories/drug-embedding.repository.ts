@@ -13,17 +13,16 @@ export class DrugEmbeddingRepository {
   async create(embedding: Partial<DrugEmbeddingEntity>): Promise<DrugEmbeddingEntity> {
     // Use raw SQL to insert with vector type
     const query = `
-      INSERT INTO drug_embeddings (drug_id, content_type, content_text, embedding, model_name)
-      VALUES ($1, $2, $3, $4::vector, $5)
+      INSERT INTO drug_embeddings (drug_id, field_name, embedding, metadata)
+      VALUES ($1, $2, $3::vector, $4)
       RETURNING *
     `;
     
     const result = await this.repository.query(query, [
       embedding.drugId,
-      embedding.contentType,
-      embedding.contentText,
+      embedding.fieldName,
       JSON.stringify(embedding.embedding),
-      embedding.modelName || 'text-embedding-3-small'
+      embedding.metadata || {}
     ]);
     
     return result[0];
@@ -36,9 +35,9 @@ export class DrugEmbeddingRepository {
     });
   }
 
-  async findByContentType(contentType: string): Promise<DrugEmbeddingEntity[]> {
+  async findByFieldName(fieldName: string): Promise<DrugEmbeddingEntity[]> {
     return this.repository.find({
-      where: { contentType: contentType as any },
+      where: { fieldName },
       relations: ['drug']
     });
   }
@@ -46,23 +45,21 @@ export class DrugEmbeddingRepository {
   async upsert(embedding: Partial<DrugEmbeddingEntity>): Promise<DrugEmbeddingEntity> {
     // Use raw SQL for upsert with vector type
     const query = `
-      INSERT INTO drug_embeddings (drug_id, content_type, content_text, embedding, model_name)
-      VALUES ($1, $2, $3, $4::vector, $5)
-      ON CONFLICT (drug_id, content_type) 
+      INSERT INTO drug_embeddings (drug_id, field_name, embedding, metadata)
+      VALUES ($1, $2, $3::vector, $4)
+      ON CONFLICT (drug_id, field_name) 
       DO UPDATE SET 
-        content_text = EXCLUDED.content_text,
         embedding = EXCLUDED.embedding,
-        model_name = EXCLUDED.model_name,
+        metadata = EXCLUDED.metadata,
         updated_at = CURRENT_TIMESTAMP
       RETURNING *
     `;
     
     const result = await this.repository.query(query, [
       embedding.drugId,
-      embedding.contentType,
-      embedding.contentText,
+      embedding.fieldName,
       JSON.stringify(embedding.embedding),
-      embedding.modelName || 'text-embedding-3-small'
+      embedding.metadata || {}
     ]);
     
     return result[0];
@@ -70,7 +67,7 @@ export class DrugEmbeddingRepository {
 
   async semanticSearch(
     queryEmbedding: number[], 
-    contentType: string, 
+    fieldName: string, 
     limit: number = 10,
     threshold: number = 0.7
   ): Promise<{ embedding: DrugEmbeddingEntity; similarity: number }[]> {
@@ -79,11 +76,9 @@ export class DrugEmbeddingRepository {
       SELECT 
         de.id,
         de.drug_id,
-        de.content_type,
-        de.content_text,
-        de.model_name,
+        de.field_name,
+        de.metadata,
         de.created_at,
-        de.updated_at,
         d.set_id,
         d.drug_name,
         d.generic_name,
@@ -93,7 +88,7 @@ export class DrugEmbeddingRepository {
         1 - (de.embedding <=> $1::vector) as similarity
       FROM drug_embeddings de
       INNER JOIN drugs d ON de.drug_id = d.id
-      WHERE de.content_type = $2 
+      WHERE de.field_name = $2 
         AND de.embedding IS NOT NULL
         AND 1 - (de.embedding <=> $1::vector) >= $3
       ORDER BY de.embedding <=> $1::vector
@@ -102,7 +97,7 @@ export class DrugEmbeddingRepository {
 
     const results = await this.repository.query(query, [
       JSON.stringify(queryEmbedding),
-      contentType,
+      fieldName,
       threshold,
       limit
     ]);
@@ -111,12 +106,10 @@ export class DrugEmbeddingRepository {
       embedding: {
         id: row.id,
         drugId: row.drug_id,
-        contentType: row.content_type,
-        contentText: row.content_text,
+        fieldName: row.field_name,
         embedding: row.embedding,
-        modelName: row.model_name,
+        metadata: row.metadata,
         createdAt: row.created_at,
-        updatedAt: row.updated_at,
         drug: {
           setId: row.set_id,
           drugName: row.drug_name,

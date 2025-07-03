@@ -82,22 +82,41 @@ export function ComparisonResults({ data, isInteractive = false }: ComparisonRes
   return (
     <article className="prose prose-lg max-w-none">
       {/* Executive Summary Section */}
-      <section className="mb-12">
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">
-          Comparison Summary: {data.drugs.map(d => d.drugName).join(' vs ')}
-        </h2>
+      <section className="mb-12" itemScope itemType="https://schema.org/MedicalWebPage">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6" itemProp="headline">
+          {data.drugs.map(d => d.drugName).join(' vs ')}: Comprehensive Drug Comparison
+        </h1>
+        
+        {/* Drug Information Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 not-prose">
+          {data.drugs.map((drug) => (
+            <div key={drug.setId} className="bg-white p-4 rounded-lg border border-gray-200" 
+                 itemScope itemType="https://schema.org/Drug" itemProp="mentions">
+              <h3 className="font-semibold text-lg mb-2" itemProp="name">{drug.drugName}</h3>
+              {drug.genericName && (
+                <p className="text-sm text-gray-600 mb-1">
+                  <span className="font-medium">Generic Name:</span> <span itemProp="activeIngredient">{drug.genericName}</span>
+                </p>
+              )}
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Manufacturer:</span> <span itemProp="manufacturer">{drug.manufacturer || drug.labeler}</span>
+              </p>
+            </div>
+          ))}
+        </div>
         
         <div className="bg-blue-50 rounded-lg p-6 mb-8 not-prose">
-          <p className="text-lg text-blue-900 leading-relaxed">
-            {data.aiAnalysis.overallRecommendation}
+          <p className="text-lg text-blue-900 leading-relaxed" itemProp="description">
+            {data.aiAnalysis?.overallRecommendation || 'Analyzing drugs...'}
           </p>
         </div>
 
         {/* Key Differences */}
-        <div className="mb-8">
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">Key Differences</h3>
-          <ul className="space-y-3">
-            {data.aiAnalysis.keyDifferences.map((diff, idx) => (
+        {data.aiAnalysis?.keyDifferences && data.aiAnalysis.keyDifferences.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4">Key Differences</h3>
+            <ul className="space-y-3">
+              {data.aiAnalysis.keyDifferences.map((diff, idx) => (
               <li key={idx} className="flex items-start gap-3">
                 <span className="text-blue-600 mt-1">•</span>
                 <span className="text-gray-700">{diff}</span>
@@ -105,6 +124,7 @@ export function ComparisonResults({ data, isInteractive = false }: ComparisonRes
             ))}
           </ul>
         </div>
+        )}
       </section>
 
       {/* Drug Overview Cards */}
@@ -154,7 +174,7 @@ export function ComparisonResults({ data, isInteractive = false }: ComparisonRes
         </p>
         
         <div className="space-y-4 not-prose">
-          {data.aiAnalysis.effectivenessComparison.map((item, idx) => (
+          {data.aiAnalysis?.effectivenessComparison?.map((item, idx) => (
             <div key={idx} className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-xl font-semibold text-gray-900">{item.drug}</h3>
@@ -192,7 +212,7 @@ export function ComparisonResults({ data, isInteractive = false }: ComparisonRes
         </p>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 not-prose">
-          {data.aiAnalysis.safetyProfile.map((item, idx) => (
+          {data.aiAnalysis?.safetyProfile?.map((item, idx) => (
             <div key={idx} className={`rounded-lg border-2 p-6 ${getRiskColor(item.riskLevel)}`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">{item.drug}</h3>
@@ -223,7 +243,7 @@ export function ComparisonResults({ data, isInteractive = false }: ComparisonRes
       </section>
 
       {/* Cost Analysis (if available) */}
-      {data.aiAnalysis.costEffectiveness && (
+      {data.aiAnalysis?.costEffectiveness && (
         <section className="mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">Cost & Value Analysis</h2>
           <p className="text-gray-700 mb-6">
@@ -273,10 +293,15 @@ export function ComparisonResults({ data, isInteractive = false }: ComparisonRes
           <table className="w-full border-collapse bg-white rounded-lg shadow-sm">
             <thead>
               <tr className="bg-gray-50 border-b-2 border-gray-200">
-                <th className="text-left p-4 font-semibold text-gray-900">Attribute</th>
+                <th className="text-left p-4 font-semibold text-gray-900" scope="col">Attribute</th>
                 {data.drugs.map((drug) => (
-                  <th key={drug.setId} className="text-left p-4 font-semibold text-gray-900 min-w-[200px]">
-                    {drug.drugName}
+                  <th key={drug.setId} className="text-left p-4 font-semibold text-gray-900 min-w-[200px]" scope="col">
+                    <div>
+                      <div className="font-semibold">{drug.drugName}</div>
+                      {drug.genericName && drug.genericName !== drug.drugName && (
+                        <div className="text-sm font-normal text-gray-600">({drug.genericName})</div>
+                      )}
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -315,7 +340,7 @@ export function ComparisonResults({ data, isInteractive = false }: ComparisonRes
       </section>
 
       {/* Patient-Specific Recommendations */}
-      {data.aiAnalysis.patientPreferences && data.aiAnalysis.patientPreferences.length > 0 && (
+      {data.aiAnalysis?.patientPreferences && data.aiAnalysis.patientPreferences.length > 0 && (
         <section className="mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">Patient-Specific Recommendations</h2>
           <p className="text-gray-700 mb-6">

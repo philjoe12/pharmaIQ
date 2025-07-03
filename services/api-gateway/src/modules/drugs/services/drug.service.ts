@@ -246,8 +246,21 @@ export class DrugService {
     return drugs;
   }
 
+  async cacheComparison(cacheKey: string, comparisonData: any): Promise<void> {
+    // Cache for 1 hour (3600 seconds) to allow for session persistence
+    await this.cacheManager.set(`comparison:${cacheKey}`, comparisonData, 3600);
+    console.log(`Cached comparison for key: comparison:${cacheKey}`);
+  }
+
   async getCachedComparison(cacheKey: string): Promise<any | null> {
-    // First check for AI comparison cache
+    // First check Redis cache
+    const cached = await this.cacheManager.get(`comparison:${cacheKey}`);
+    if (cached) {
+      console.log('Found comparison in Redis cache');
+      return cached;
+    }
+    
+    // Then check AI cache service
     const comparisonResult = await this.aiCacheService.getComparisonResult(cacheKey);
     if (comparisonResult) {
       // Track this as a popular comparison

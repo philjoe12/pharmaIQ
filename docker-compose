@@ -1,0 +1,26 @@
+#!/bin/bash
+# Docker Compose wrapper to handle Python dependency issues
+
+# Try docker compose v2 first (doesn't have Python issues)
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    exec docker compose "$@"
+fi
+
+# Fall back to docker-compose v1 with Python path fixes
+export PYTHONPATH=""
+export PYTHONWARNINGS="ignore"
+
+# Try to suppress urllib3 warnings
+export REQUESTS_CA_BUNDLE=""
+export CURL_CA_BUNDLE=""
+
+# Execute docker-compose with cleaned environment
+if command -v docker-compose >/dev/null 2>&1; then
+    # Clear potentially conflicting Python packages from path
+    PATH_CLEANED=$(echo $PATH | tr ':' '\n' | grep -v -E "pip|python3/dist-packages" | tr '\n' ':')
+    PATH=$PATH_CLEANED exec docker-compose "$@"
+else
+    echo "Error: Neither 'docker compose' nor 'docker-compose' found!"
+    echo "Please install Docker Compose: https://docs.docker.com/compose/install/"
+    exit 1
+fi

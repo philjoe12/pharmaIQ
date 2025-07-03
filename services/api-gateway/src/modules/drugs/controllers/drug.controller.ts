@@ -22,6 +22,7 @@ import { DrugQueryDto } from '../dto/drug-query.dto';
 import { DrugDto } from '../dto/drug.dto';
 import { CompareDrugsDto } from '../dto/compare-drugs.dto';
 import { AIService } from '../../ai/services/ai.service';
+import { QuestionAnsweringService } from '../../ai/services/question-answering.service';
 
 @ApiTags('drugs')
 @Controller('drugs')
@@ -30,6 +31,7 @@ export class DrugController {
   constructor(
     private readonly drugService: DrugService,
     private readonly aiService: AIService,
+    private readonly questionAnsweringService: QuestionAnsweringService,
   ) {}
 
   @Get('search')
@@ -148,13 +150,19 @@ export class DrugController {
       // Generate comparison matrix
       const comparisonMatrix = this.generateComparisonMatrix(drugs);
       
+      const comparisonResult = {
+        drugs,
+        aiAnalysis,
+        comparisonMatrix
+      };
+      
+      // Cache the comparison result in Redis
+      const cacheKey = compareDto.drugIds.sort().join(',');
+      await this.drugService.cacheComparison(cacheKey, comparisonResult);
+      
       return {
         success: true,
-        data: {
-          drugs,
-          aiAnalysis,
-          comparisonMatrix
-        }
+        data: comparisonResult
       };
     } catch (error) {
       console.error('Error in compareDrugsWithAI:', error);
@@ -360,5 +368,43 @@ export class DrugController {
   async triggerEnhancement(@Param('id') id: string) {
     await this.drugService.enhanceDrugContent(id);
     return { success: true, message: `Enhancement triggered for drug ${id}` };
+  }
+
+  @Post('ai/answer-question')
+  @ApiOperation({ summary: 'AI-powered question answering with drug recommendations' })
+  @ApiBody({
+    description: 'Question parameters',
+    schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string', description: 'Natural language question' },
+        userType: { type: 'string', enum: ['patient', 'provider', 'general'] },
+        limit: { type: 'number', description: 'Number of drug recommendations' }
+      },
+      required: ['question']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'AI answer with relevant drug recommendations' })
+  async answerQuestion(@Body() params: {
+    question: string;
+    userType?: 'patient' | 'provider' | 'general';
+    limit?: number;
+  }) {
+    const { question, userType = 'general', limit = 5 } = params;
+    
+    if (!question || question.trim().length < 3) {
+      throw new NotFoundException('Question must be at least 3 characters');
+    }
+    
+    return this.questionAnsweringService.answerQuestion(question, userType, limit);
+  }
+
+  @Get('ai/popular-questions')
+  @ApiOperation({ summary: 'Get popular questions for SEO' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: 'List of popular questions' })
+  async getPopularQuestions(@Query('limit') limit?: number) {
+    const questions = await this.questionAnsweringService.getPopularQuestions(limit || 10);
+    return { success: true, data: questions };
   }
 }

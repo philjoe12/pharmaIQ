@@ -8,6 +8,7 @@ import { AIEnhancementService } from './services/ai-enhancement.service';
 import { ContentEnhancementProcessor } from './services/content-enhancement.processor';
 import { DrugComparisonService } from './services/drug-comparison.service';
 import { EmbeddingService } from './services/embedding.service';
+import { QuestionAnsweringService } from './services/question-answering.service';
 import { DrugsModule } from '../drugs/drug.module';
 import { EventsModule } from '../events/events.module';
 import { AICacheService } from '../../common/services/ai-cache.service';
@@ -33,10 +34,11 @@ import { DrugRepository } from '../../database/repositories/drug.repository';
     ContentEnhancementProcessor,
     DrugComparisonService,
     EmbeddingService,
+    QuestionAnsweringService,
     DrugEmbeddingRepository,
     DrugRepository,
     AICacheService
   ],
-  exports: [AIService, AIEnhancementService, DrugComparisonService, EmbeddingService],
+  exports: [AIService, AIEnhancementService, DrugComparisonService, EmbeddingService, QuestionAnsweringService],
 })
 export class AIModule {}

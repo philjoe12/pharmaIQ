@@ -77,10 +77,9 @@ export class EmbeddingService {
         const drugId = this.getDrugId(drug);
         const summaryEntity = await this.embeddingRepository.upsert({
           drugId,
-          contentType: 'summary',
-          contentText: summaryText,
+          fieldName: 'summary',
           embedding: summaryEmbedding.embedding,
-          modelName: summaryEmbedding.model,
+          metadata: { model: summaryEmbedding.model, text: summaryText },
         });
         embeddings.push(summaryEntity);
       }
@@ -91,10 +90,9 @@ export class EmbeddingService {
         const indicationsEmbedding = await this.generateEmbedding(indicationsText);
         const indicationsEntity = await this.embeddingRepository.upsert({
           drugId: this.getDrugId(drug),
-          contentType: 'indications',
-          contentText: indicationsText,
+          fieldName: 'indications',
           embedding: indicationsEmbedding.embedding,
-          modelName: indicationsEmbedding.model,
+          metadata: { model: indicationsEmbedding.model, text: indicationsText },
         });
         embeddings.push(indicationsEntity);
       }
@@ -105,10 +103,9 @@ export class EmbeddingService {
         const fullLabelEmbedding = await this.generateEmbedding(fullLabelText);
         const fullLabelEntity = await this.embeddingRepository.upsert({
           drugId: this.getDrugId(drug),
-          contentType: 'full_label',
-          contentText: fullLabelText,
+          fieldName: 'full_label',
           embedding: fullLabelEmbedding.embedding,
-          modelName: fullLabelEmbedding.model,
+          metadata: { model: fullLabelEmbedding.model, text: fullLabelText },
         });
         embeddings.push(fullLabelEntity);
       }
@@ -155,7 +152,7 @@ export class EmbeddingService {
       return results.map(result => ({
         drug: result.embedding.drug as DrugEntity,
         similarity: result.similarity,
-        contentType: result.embedding.contentType
+        contentType: result.embedding.fieldName
       }));
     } catch (error) {
       this.logger.error('Semantic search failed:', error);
@@ -287,9 +284,9 @@ export class EmbeddingService {
   }> {
     const total = await this.embeddingRepository.count();
     
-    const summaryCount = (await this.embeddingRepository.findByContentType('summary')).length;
-    const indicationsCount = (await this.embeddingRepository.findByContentType('indications')).length;
-    const fullLabelCount = (await this.embeddingRepository.findByContentType('full_label')).length;
+    const summaryCount = (await this.embeddingRepository.findByFieldName('summary')).length;
+    const indicationsCount = (await this.embeddingRepository.findByFieldName('indications')).length;
+    const fullLabelCount = (await this.embeddingRepository.findByFieldName('full_label')).length;
 
     return {
       total,

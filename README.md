@@ -10,6 +10,11 @@ A production-ready system that transforms FDA drug label JSON files into SEO-opt
 - 🔍 **Advanced Search**: Full-text search with filters, faceted navigation, and natural language queries
 - 📱 **Responsive Design**: Mobile-first design optimized for healthcare professionals
 - 🎯 **SEO Optimized**: Server-side rendering with structured data and meta tags
+- 💊 **Advanced Drug Comparison**:
+  - **SEO-Friendly URLs**: Dynamic URLs with drug names and IDs (e.g., `/drugs/compare?drugs=mounjaro-d2d7da5,olumiant-866e9f3&compare=mounjaro-vs-olumiant`)
+  - **Redis Session Storage**: AI comparison results cached for 1 hour with automatic cache checking
+  - **Direct URL Access**: Share comparison URLs that automatically load drugs and generate AI analysis
+  - **Rich SEO Features**: Dynamic page titles, meta descriptions, and Schema.org structured data for drug comparisons
 - ⚡ **High Performance**: Redis caching and optimized Core Web Vitals
 - 🔄 **Real-time Processing**: Bull queues for asynchronous AI processing
 - 📊 **MCP Integration**: Model Context Protocol for AI tool access
@@ -17,67 +22,59 @@ A production-ready system that transforms FDA drug label JSON files into SEO-opt
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Docker** and **docker-compose**
-- **OpenAI API Key** (required for AI features and semantic search)
+- **Docker** and **docker-compose** (v2.0+)
+- **OpenAI API Key** (optional - for AI features)
 
-### Platform-Specific Notes
-
-**macOS Users:**
-- For better performance, enable VirtioFS in Docker Desktop settings
-- Docker Desktop should have at least 4GB RAM allocated
+### Platform-Specific Setup
 
 **Linux Users:**
-- Add your user to the docker group: `sudo usermod -aG docker $USER`
-- If using SELinux (RHEL/Fedora), the setup script handles volume permissions automatically
+```bash
+# Add user to docker group (then logout/login)
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+**macOS Users:**
+- Docker Desktop with 4GB+ RAM allocated
+- Enable VirtioFS for better performance
 
 **Windows Users:**
-- Use WSL2 backend for Docker Desktop
-- Clone the repository inside WSL2 filesystem for better performance
-- Ensure line endings are LF, not CRLF: `git config core.autocrlf false`
+- Use WSL2 with Docker Desktop
+- Clone inside WSL2 filesystem
 
 ### Setup
 
-1. **Clone the Repository**
+1. **Clone and Navigate**
    ```bash
    git clone https://github.com/philjoe12/pharmaIQ.git
    cd pharmaIQ
    ```
 
-2. **Configure Environment**
+2. **Start with Docker Compose** (Simple Method)
    ```bash
-   cp .env.example .env
-   # Add your OpenAI API key to .env for AI features and semantic search
-   echo "OPENAI_API_KEY=your-openai-api-key" >> .env
-   ```
-
-3. **Start the Application**
+   # Optional: Set OpenAI API key for AI features
+   export OPENAI_API_KEY="your-key-here"  # or add to .env file
    
-   **Recommended: Using the Setup Script**
-   ```bash
-   ./scripts/docker-setup.sh
-   ```
-   
-   This interactive script will:
-   - Check your system compatibility (Linux/macOS/Windows WSL2)
-   - Start all Docker services
-   - Initialize the database automatically using TypeORM migrations
-   - Import sample drug data
-   - Show you the application URLs
-   
-   **Alternative: Manual Setup**
-   ```bash
    # Start all services
-   docker-compose up -d
-   
-   # The database will be initialized automatically on first run
-   # To import sample drug data:
-   docker exec -it pharmaiq-api-1 node /app/infrastructure/docker/scripts/import-labels.js
+   docker-compose up
    ```
+   
+   That's it! The application will:
+   - Start all required services
+   - Initialize the database automatically
+   - Be ready in ~30-60 seconds
 
-4. **Access the Application**
-   - **Main App**: `http://localhost:3000`
-   - **API**: `http://localhost:3001`
-   - **Health Check**: `http://localhost:3001/health`
+3. **Access the Application**
+   
+   **From the Server:**
+   - Frontend: `http://localhost:3000`
+   - API: `http://localhost:3001`
+   
+   **From Another Computer:**
+   - Frontend: `http://<server-ip>:3000`
+   - API: `http://<server-ip>:3001`
+   
+   **Note for Remote Access:** The frontend is configured to accept connections from any IP address.
 
 ## 🏗️ Architecture Overview
 
@@ -557,17 +554,22 @@ export class DrugCacheService {
 
 ## 🚀 Development Workflow
 
-### Local Development
+### Basic Commands
 ```bash
-# Install dependencies
-npm install
+# Start everything
+docker-compose up
 
-# Start development environment
-docker-compose -f infrastructure/docker/docker-compose.yml up
+# Run in background
+docker-compose up -d
 
-# Run individual services
-cd services/api-gateway && npm run dev
-cd web && npm run dev
+# View logs
+docker-compose logs -f
+
+# Stop everything
+docker-compose down
+
+# Restart a service
+docker-compose restart web
 ```
 
 ### Database Management

@@ -98,11 +98,11 @@ async function importLabels() {
 
         // Insert SEO metadata
         await client.query(`
-          INSERT INTO seo_metadata (drug_id, title, meta_description, keywords)
+          INSERT INTO seo_metadata (drug_id, page_title, meta_description, keywords)
           VALUES ($1, $2, $3, $4)
           ON CONFLICT (drug_id) DO UPDATE
           SET
-            title = EXCLUDED.title,
+            page_title = EXCLUDED.page_title,
             meta_description = EXCLUDED.meta_description,
             keywords = EXCLUDED.keywords,
             updated_at = CURRENT_TIMESTAMP

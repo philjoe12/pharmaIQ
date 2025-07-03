@@ -60,13 +60,57 @@ export function SmartDrugDiscovery() {
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aiAnswer, setAiAnswer] = useState<any>(null);
+  const [isAnswering, setIsAnswering] = useState(false);
 
   const handleSmartSearch = async () => {
     if (!query.trim()) return;
     
     setIsSearching(true);
+    setIsAnswering(true);
     setError(null);
+    setAiAnswer(null);
+    
     try {
+      // First, get AI answer if the query looks like a question
+      if (query.includes('?') || query.split(' ').length > 3) {
+        try {
+          const answerResponse = await fetch('/api/drugs/ai/answer-question', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: query.trim(),
+              userType,
+              limit: 5
+            })
+          });
+          
+          if (answerResponse.ok) {
+            const answerData = await answerResponse.json();
+            setAiAnswer(answerData);
+            
+            // If we got relevant drugs from the answer, use them as search results
+            if (answerData.relevantDrugs && answerData.relevantDrugs.length > 0) {
+              setSearchResults({
+                query: query,
+                totalFound: answerData.relevantDrugs.length,
+                drugs: answerData.relevantDrugs,
+                suggestedQueries: answerData.suggestedQuestions || []
+              });
+              setIsAnswering(false);
+              setIsSearching(false);
+              return;
+            }
+          }
+        } catch (answerError) {
+          console.error('AI answer failed:', answerError);
+          // Continue with regular search
+        }
+      }
+      
+      setIsAnswering(false);
+      
+      // Fall back to regular smart search
       const response = await fetch('/api/drugs/discovery/smart-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,6 +157,7 @@ export function SmartDrugDiscovery() {
       });
     } finally {
       setIsSearching(false);
+      setIsAnswering(false);
     }
   };
 
@@ -276,10 +321,63 @@ export function SmartDrugDiscovery() {
       )}
 
       {/* Search Results */}
-      {isSearching && (
+      {(isSearching || isAnswering) && (
         <Card className="p-8 text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600">Finding the best medications for you...</p>
+          <p className="mt-4 text-gray-600">
+            {isAnswering ? 'AI is analyzing your question...' : 'Finding the best medications for you...'}
+          </p>
+        </Card>
+      )}
+
+      {/* AI Answer Section */}
+      {aiAnswer && !isSearching && !isAnswering && (
+        <Card className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Sparkles className="h-6 w-6 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">AI Answer</h3>
+              <p className="text-sm text-gray-600">
+                Confidence: {Math.round((aiAnswer.confidence || 0) * 100)}%
+                {aiAnswer.cached && ' • Cached response'}
+              </p>
+            </div>
+          </div>
+          
+          <div className="prose prose-sm max-w-none mb-4">
+            <p className="text-gray-800 leading-relaxed">{aiAnswer.answer}</p>
+          </div>
+          
+          {/* SEO-friendly URL if available */}
+          {aiAnswer.seoFriendlyUrl && (
+            <div className="mt-4 p-3 bg-white rounded-lg border border-gray-200">
+              <p className="text-xs text-gray-500 mb-1">Share this answer:</p>
+              <code className="text-sm text-blue-600">{`pharmaiq.com${aiAnswer.seoFriendlyUrl}`}</code>
+            </div>
+          )}
+          
+          {/* Suggested follow-up questions */}
+          {aiAnswer.suggestedQuestions && aiAnswer.suggestedQuestions.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Related questions:</p>
+              <div className="flex flex-wrap gap-2">
+                {aiAnswer.suggestedQuestions.map((question, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setQuery(question);
+                      handleSmartSearch();
+                    }}
+                    className="px-3 py-1.5 text-sm bg-white text-purple-700 rounded-full border border-purple-200 hover:bg-purple-50"
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       )}
 
