@@ -9,8 +9,7 @@ import { DrugRepository } from '../../database/repositories/drug.repository';
 import { AICacheService } from '../../common/services/ai-cache.service';
 import { DrugEventsPublisher } from '../events/publishers/drug-events.publisher';
 import { BasePublisher } from '../events/publishers/base-publisher';
-import { SearchAggregatorService } from '../search/services/search-aggregator.service';
-import { ElasticsearchService } from '../search/services/elasticsearch.service';
+import { SearchModule } from '../search/search.module';
 import { EmbeddingService } from '../ai/services/embedding.service';
 import { DrugEmbeddingRepository } from '../../database/repositories/drug-embedding.repository';
 
@@ -37,6 +36,7 @@ import { AIModule } from '../ai/ai.module';
       name: 'label-processing',
     }),
     forwardRef(() => AIModule),
+    SearchModule,
   ],
   controllers: [DrugController],
   providers: [
@@ -47,8 +47,6 @@ import { AIModule } from '../ai/ai.module';
     AICacheService,
     DrugEventsPublisher,
     BasePublisher,
-    SearchAggregatorService,
-    ElasticsearchService,
     EmbeddingService
   ],
   exports: [DrugService, DrugRepository, AICacheService],
