@@ -1,0 +1,5 @@
+[
+  {"craId":"CRA001","name":"Alice","openQueries":50,"patientVisits":10,"travelDays":5},
+  {"craId":"CRA002","name":"Bob","openQueries":20,"patientVisits":15,"travelDays":2},
+  {"craId":"CRA003","name":"Charlie","openQueries":90,"patientVisits":8,"travelDays":10}
+]
