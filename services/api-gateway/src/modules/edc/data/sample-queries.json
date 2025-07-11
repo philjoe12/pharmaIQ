@@ -1,0 +1,9 @@
+{
+  "CRA001": [
+    { "queryId": "Q1", "text": "Please clarify visit date for patient 101" },
+    { "queryId": "Q2", "text": "Missing consent form page 2" }
+  ],
+  "CRA002": [
+    { "queryId": "Q3", "text": "Adverse event severity not specified" }
+  ]
+}

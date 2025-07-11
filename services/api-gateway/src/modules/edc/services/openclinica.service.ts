@@ -3,12 +3,19 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 import { EdcStudyEntity } from '../../../database/entities/edc-study.entity';
 
 export interface OpenClinicaStudy {
   studyOID: string;
   name: string;
   status?: string;
+}
+
+export interface OpenClinicaQuery {
+  queryId: string;
+  text: string;
 }
 
 @Injectable()
@@ -63,5 +70,29 @@ export class OpenClinicaService {
       }
     }
     return saved;
+  }
+
+  async getOpenQueries(craId: string): Promise<OpenClinicaQuery[]> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/cras/${craId}/queries`, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: 'application/json',
+        },
+      });
+      const data = response.data?.queries || response.data || [];
+      return data as OpenClinicaQuery[];
+    } catch (error: any) {
+      this.logger.warn(`Failed to fetch queries for ${craId} from OpenClinica: ${error.message}`);
+      try {
+        const filePath = path.join(__dirname, '../data/sample-queries.json');
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const map = JSON.parse(raw) as Record<string, OpenClinicaQuery[]>;
+        return map[craId] || [];
+      } catch (fsError: any) {
+        this.logger.error('Failed to load fallback OpenClinica queries', fsError);
+        return [];
+      }
+    }
   }
 }

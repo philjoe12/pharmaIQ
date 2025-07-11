@@ -21,6 +21,7 @@ import { SeoOptimizationModule } from './seo-optimization/seo-optimization.modul
 import { WorkflowModule } from './workflow/workflow.module';
 import { EventsModule } from './events/events.module';
 import { EdcModule } from './edc/edc.module';
+import { CraModule } from './cra/cra.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { EdcModule } from './edc/edc.module';
     EventsModule,
     HealthModule,
     EdcModule,
+    CraModule,
   ],
 })
 export class AppModule {}
