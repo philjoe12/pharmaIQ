@@ -121,6 +121,14 @@ export class SearchController {
     return await this.elasticsearchService.findSimilarDrugs(drugId, limit);
   }
 
+  @Get('popular')
+  @ApiOperation({ summary: 'Get popular search queries' })
+  @ApiResponse({ status: 200, description: 'Popular searches returned successfully' })
+  @ApiQuery({ name: 'limit', description: 'Number of popular searches to return', required: false })
+  async getPopularSearches(@Query('limit') limit: number = 10) {
+    return await this.searchAggregatorService.getPopularSearches(limit);
+  }
+
   @Get('conditions/:condition')
   @ApiOperation({ summary: 'Search drugs by medical condition' })
   @ApiResponse({ status: 200, description: 'Drugs for condition returned successfully' })
