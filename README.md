@@ -54,11 +54,14 @@ newgrp docker
    ```bash
    # Copy the example environment file
    cp .env.example .env
-   
+
    # IMPORTANT: Edit .env and add your OpenAI API key
    # The AI features require a valid OpenAI API key to function
    nano .env  # or use your preferred editor
    # Update: OPENAI_API_KEY=your-actual-openai-api-key-here
+   # Optional: configure OpenClinica integration
+   # OPENCLINICA_BASE_URL=http://your-openclinica-instance/OpenClinica
+   # OPENCLINICA_API_TOKEN=your-api-token
    ```
 
 3. **Start with Docker Compose**
