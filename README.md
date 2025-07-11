@@ -10,6 +10,7 @@ A production-ready system that transforms FDA drug label JSON files into SEO-opt
 - 🔍 **Advanced Search**: Full-text search with filters, faceted navigation, and natural language queries
 - 📱 **Responsive Design**: Mobile-first design optimized for healthcare professionals
 - 🎯 **SEO Optimized**: Server-side rendering with structured data and meta tags
+- 🗂️ **Knowledge Graph**: Accessible JSON-LD dataset for search engines at `/knowledge-graph`
 - 💊 **Advanced Drug Comparison**:
   - **SEO-Friendly URLs**: Dynamic URLs with drug names and IDs (e.g., `/drugs/compare?drugs=mounjaro-d2d7da5,olumiant-866e9f3&compare=mounjaro-vs-olumiant`)
   - **Redis Session Storage**: AI comparison results cached for 1 hour with automatic cache checking
