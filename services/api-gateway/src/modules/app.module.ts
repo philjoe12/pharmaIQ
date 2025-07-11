@@ -9,6 +9,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import appConfig from '../config/app.config';
 import databaseConfig from '../config/database.config';
 import redisConfig from '../config/redis.config';
+import edcConfig from '../config/edc.config';
 
 // Modules
 import { DrugsModule } from './drugs/drug.module';
@@ -19,13 +20,14 @@ import { ProcessingModule } from './processing/processing.module';
 import { SeoOptimizationModule } from './seo-optimization/seo-optimization.module';
 import { WorkflowModule } from './workflow/workflow.module';
 import { EventsModule } from './events/events.module';
+import { EdcModule } from './edc/edc.module';
 
 @Module({
   imports: [
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, redisConfig],
+      load: [appConfig, databaseConfig, redisConfig, edcConfig],
       envFilePath: ['.env.local', '.env'],
     }),
 
@@ -73,6 +75,7 @@ import { EventsModule } from './events/events.module';
     MCPServerModule,
     EventsModule,
     HealthModule,
+    EdcModule,
   ],
 })
 export class AppModule {}
