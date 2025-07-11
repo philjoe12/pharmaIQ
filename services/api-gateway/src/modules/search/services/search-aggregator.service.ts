@@ -2,12 +2,14 @@ import { Injectable, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { DrugRepository } from '../../../database/repositories/drug.repository';
+import { SearchLogRepository } from '../../../database/repositories/search-log.repository';
 import { ElasticsearchService } from './elasticsearch.service';
 
 @Injectable()
 export class SearchAggregatorService {
   constructor(
     private readonly drugRepository: DrugRepository,
+    private readonly searchLogRepository: SearchLogRepository,
     private readonly elasticsearchService: ElasticsearchService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
@@ -74,23 +76,14 @@ export class SearchAggregatorService {
     if (cached) {
       return cached;
     }
-
-    // TODO: Implement real analytics from a search logs table
     const analytics = {
-      totalSearches: 15420,
-      uniqueQueries: 3245,
-      topQueries: [
-        { query: 'aspirin', count: 234 },
-        { query: 'blood pressure', count: 198 },
-        { query: 'diabetes medication', count: 176 }
-      ],
-      noResultsQueries: [
-        { query: 'xyz drug', count: 12 },
-        { query: 'miracle cure', count: 8 }
-      ],
-      averageResultsPerQuery: 8.5,
-      clickThroughRate: 0.65,
-      timestamp: new Date().toISOString()
+      totalSearches: await this.searchLogRepository.count(),
+      uniqueQueries: await this.searchLogRepository.countDistinctQueries(),
+      topQueries: await this.searchLogRepository.getTopQueries(10),
+      noResultsQueries: await this.searchLogRepository.getNoResultsQueries(10),
+      averageResultsPerQuery: await this.searchLogRepository.getAverageResults(),
+      clickThroughRate: 0,
+      timestamp: new Date().toISOString(),
     };
 
     await this.cacheManager.set(cacheKey, analytics, 3600); // Cache for 1 hour
@@ -155,22 +148,10 @@ export class SearchAggregatorService {
     if (cached) {
       return cached;
     }
-
-    // TODO: Implement real popular searches from search logs
+    const top = await this.searchLogRepository.getTopQueries(limit);
     const popularSearches = {
-      searches: [
-        'aspirin',
-        'ibuprofen',
-        'acetaminophen',
-        'blood pressure medication',
-        'diabetes drugs',
-        'antibiotics',
-        'pain relief',
-        'heart medication',
-        'cholesterol',
-        'allergy medicine'
-      ].slice(0, limit),
-      timestamp: new Date().toISOString()
+      searches: top.map(t => t.query),
+      timestamp: new Date().toISOString(),
     };
 
     await this.cacheManager.set(cacheKey, popularSearches, 1800); // Cache for 30 minutes
@@ -184,6 +165,7 @@ export class SearchAggregatorService {
       // Try Elasticsearch first
       const esResults = await this.elasticsearchService.searchDrugs(query, limit);
       if (esResults.total > 0) {
+        await this.searchLogRepository.createLog(query, esResults.total);
         return {
           source: 'elasticsearch',
           ...esResults,
@@ -203,6 +185,8 @@ export class SearchAggregatorService {
       slug: drug.slug,
       score: 1.0 // Default score for database results
     }));
+
+    await this.searchLogRepository.createLog(query, formattedResults.length);
 
     return {
       source: 'database',

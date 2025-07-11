@@ -15,8 +15,20 @@ interface Props {
 }
 
 export default async function Image({ params }: Props) {
-  // TODO: Fetch drug data
-  const drugName = params.slug.replace(/-/g, ' ').toUpperCase();
+  const apiUrl = process.env.API_GATEWAY_URL || 'http://api:3001';
+  let drugName = params.slug.replace(/-/g, ' ').toUpperCase();
+  let manufacturer = '';
+
+  try {
+    const res = await fetch(`${apiUrl}/drugs/${params.slug}`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      drugName = (data.drugName || drugName).toUpperCase();
+      manufacturer = data.manufacturer || '';
+    }
+  } catch (e) {
+    console.error('Failed to fetch drug data for OG image', e);
+  }
 
   return new ImageResponse(
     (
@@ -33,11 +45,14 @@ export default async function Image({ params }: Props) {
           color: 'white',
         }}
       >
-        <div style={{ fontSize: 48, marginBottom: 20 }}>PharmaIQ</div>
-        <div style={{ fontSize: 72, fontWeight: 'bold', textAlign: 'center' }}>
-          {drugName}
-        </div>
-        <div style={{ fontSize: 36, marginTop: 20 }}>Drug Information</div>
+      <div style={{ fontSize: 48, marginBottom: 20 }}>PharmaIQ</div>
+      <div style={{ fontSize: 72, fontWeight: 'bold', textAlign: 'center' }}>
+        {drugName}
+      </div>
+      {manufacturer && (
+        <div style={{ fontSize: 36, marginTop: 20 }}>{manufacturer}</div>
+      )}
+      <div style={{ fontSize: 32, marginTop: 10 }}>Drug Information</div>
       </div>
     ),
     {
