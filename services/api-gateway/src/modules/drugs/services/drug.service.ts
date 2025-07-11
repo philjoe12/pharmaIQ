@@ -7,6 +7,7 @@ import { DrugQueryDto } from '../dto/drug-query.dto';
 import { DrugStatus, PaginatedResponse, DrugLabel } from '../../../shared-types';
 import { DrugRepository } from '../../../database/repositories/drug.repository';
 import { DrugEntity } from '../../../database/entities/drug.entity';
+import { SEOMetadataEntity } from '../../../database/entities/seo-metadata.entity';
 import { SearchAggregatorService } from '../../search/services/search-aggregator.service';
 import { ElasticsearchService } from '../../search/services/elasticsearch.service';
 import { DrugEventsPublisher } from '../../events/publishers/drug-events.publisher';
@@ -835,8 +836,8 @@ export class DrugService {
   }
 
   async findEnhancedBySlug(
-    slug: string, 
-    userType: 'patient' | 'provider' | 'general', 
+    slug: string,
+    userType: 'patient' | 'provider' | 'general',
     includeAI: boolean = true
   ): Promise<any> {
     const cacheKey = `enhanced:${slug}:${userType}:${includeAI}`;
@@ -870,6 +871,27 @@ export class DrugService {
       console.error('Error enhancing drug content:', error);
       // Fallback to basic drug info
       return this.findBySlug(slug);
+    }
+  }
+
+  async getSEOMetadataBySlug(slug: string): Promise<SEOMetadataEntity | null> {
+    try {
+      const drug = await this.drugRepository.findBySlugWithRelations(slug);
+      if (!drug) {
+        return null;
+      }
+      const cached = await this.aiCacheService.getSEOMetadata(drug.id);
+      if (cached) {
+        return cached;
+      }
+      const seo = drug.seoMetadata || null;
+      if (seo) {
+        await this.aiCacheService.cacheSEOMetadata(drug.id, seo);
+      }
+      return seo;
+    } catch (error) {
+      console.error('Error fetching SEO metadata:', error);
+      return null;
     }
   }
 
