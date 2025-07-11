@@ -714,6 +714,18 @@ npm run db:migrate
 # Seed sample data
 npm run db:seed
 ```
+### Importing OpenFDA Data
+Use the script below to pull labels from the official openFDA API. You can control the API URL, batch size and total records via environment variables or CLI:
+```bash
+# Optional environment overrides
+export OPENFDA_URL="https://api.fda.gov/drug/label.json"
+export OPENFDA_BATCH_SIZE=200   # default 100
+export OPENFDA_TOTAL=5000       # default 1000
+
+# Run import (argument overrides OPENFDA_TOTAL)
+npx ts-node scripts/import-openfda.ts 5000
+```
+
 
 ### AI Processing
 ```bash
