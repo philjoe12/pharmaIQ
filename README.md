@@ -10,6 +10,7 @@ A production-ready system that transforms FDA drug label JSON files into SEO-opt
 - 🔍 **Advanced Search**: Full-text search with filters, faceted navigation, and natural language queries
 - 📱 **Responsive Design**: Mobile-first design optimized for healthcare professionals
 - 🎯 **SEO Optimized**: Server-side rendering with structured data and meta tags
+- 🗂️ **Knowledge Graph**: Accessible JSON-LD dataset for search engines at `/knowledge-graph`
 - 💊 **Advanced Drug Comparison**:
   - **SEO-Friendly URLs**: Dynamic URLs with drug names and IDs (e.g., `/drugs/compare?drugs=mounjaro-d2d7da5,olumiant-866e9f3&compare=mounjaro-vs-olumiant`)
   - **Redis Session Storage**: AI comparison results cached for 1 hour with automatic cache checking
@@ -54,11 +55,14 @@ newgrp docker
    ```bash
    # Copy the example environment file
    cp .env.example .env
-   
+
    # IMPORTANT: Edit .env and add your OpenAI API key
    # The AI features require a valid OpenAI API key to function
    nano .env  # or use your preferred editor
    # Update: OPENAI_API_KEY=your-actual-openai-api-key-here
+   # Optional: configure OpenClinica integration
+   # OPENCLINICA_BASE_URL=http://your-openclinica-instance/OpenClinica
+   # OPENCLINICA_API_TOKEN=your-api-token
    ```
 
 3. **Start with Docker Compose**
@@ -714,6 +718,18 @@ npm run db:migrate
 # Seed sample data
 npm run db:seed
 ```
+### Importing OpenFDA Data
+Use the script below to pull labels from the official openFDA API. You can control the API URL, batch size and total records via environment variables or CLI:
+```bash
+# Optional environment overrides
+export OPENFDA_URL="https://api.fda.gov/drug/label.json"
+export OPENFDA_BATCH_SIZE=200   # default 100
+export OPENFDA_TOTAL=5000       # default 1000
+
+# Run import (argument overrides OPENFDA_TOTAL)
+npx ts-node scripts/import-openfda.ts 5000
+```
+
 
 ### AI Processing
 ```bash

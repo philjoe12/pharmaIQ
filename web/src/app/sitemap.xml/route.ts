@@ -41,6 +41,12 @@ export async function GET() {
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>${baseUrl}/knowledge-graph</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
   ${drugs.map((drug: any) => `
   <url>
     <loc>${baseUrl}/drugs/${drug.slug}</loc>
@@ -73,6 +79,12 @@ export async function GET() {
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/knowledge-graph</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>`
 

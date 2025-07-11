@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, Logger, HttpException, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Logger, HttpException, HttpStatus, Query, Param } from '@nestjs/common';
+import { DrugService } from '../../drugs/services/drug.service';
 import { SeoOptimizationService, DrugData, SeoContent, SitemapEntry } from '../services/seo-optimization.service';
 
 export interface GenerateSeoDto {
@@ -13,7 +14,10 @@ export interface GenerateBatchSeoDto {
 export class SeoOptimizationController {
   private readonly logger = new Logger(SeoOptimizationController.name);
 
-  constructor(private readonly seoService: SeoOptimizationService) {}
+  constructor(
+    private readonly seoService: SeoOptimizationService,
+    private readonly drugService: DrugService
+  ) {}
 
   @Post('generate')
   async generateSeoContent(@Body() dto: GenerateSeoDto): Promise<SeoContent> {
@@ -138,6 +142,23 @@ export class SeoOptimizationController {
       throw new HttpException(
         error.message || 'Meta tags generation failed',
         HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('drug/:slug')
+  async getDrugSeo(@Param('slug') slug: string) {
+    try {
+      const seoData = await this.drugService.getSEOMetadataBySlug(slug);
+      if (!seoData) {
+        throw new HttpException('SEO metadata not found', HttpStatus.NOT_FOUND);
+      }
+      return { success: true, data: seoData };
+    } catch (error) {
+      this.logger.error('Failed to fetch SEO metadata:', error);
+      throw new HttpException(
+        error.message || 'Failed to fetch SEO metadata',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
